@@ -64,7 +64,6 @@ export default function App() {
   const goToGroup = useCallback((si, gi) => {
     setSectionIdx(si)
     setGroupIdx(gi)
-    setSidebarOpen(false)
   }, [])
 
   const markQuestion = useCallback((qid, status) => {
