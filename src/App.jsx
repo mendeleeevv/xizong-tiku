@@ -131,7 +131,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="layout">
+      <div className={`layout ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
         {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
