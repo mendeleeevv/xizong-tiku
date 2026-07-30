@@ -168,7 +168,7 @@ export default function App() {
         </aside>
 
         {/* Overlay for mobile */}
-        {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+        {/* no overlay - sidebar stays open until ✕ clicked */}
 
         {/* Main content */}
         <main className="content">
