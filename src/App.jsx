@@ -23,8 +23,9 @@ export default function App() {
     return localStorage.getItem('xizong-dark') === '1'
   })
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [filterType, setFilterType] = useState('all') // 'all', 'b_type', 'qa'
+  const [filterType, setFilterType] = useState('all')
   const [showWrongBook, setShowWrongBook] = useState(false)
+  const [rightPanelTab, setRightPanelTab] = useState('dashboard') // 'dashboard' | 'wrongbook'
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -103,7 +104,19 @@ export default function App() {
     return items
   }, [allGroups, progress])
 
-  const totalGroups = allGroups.length
+  // Chapter stats
+  const chapterStats = useMemo(() => {
+    return sections.map((section, si) => {
+      let total = 0, done = 0
+      section.groups.forEach(group => {
+        group.questions.forEach(q => {
+          total++
+          if (progress[q.id]) done++
+        })
+      })
+      return { name: section.name, total, done, pct: total ? Math.round(done / total * 100) : 0 }
+    })
+  }, [sections, progress])
 
   return (
     <div className={`app ${darkMode ? 'dark' : ''}`}>
@@ -131,8 +144,8 @@ export default function App() {
             <option value="qa">问答题</option>
           </select>
 
-          <button className="icon-btn" onClick={() => setShowWrongBook(!showWrongBook)} title="错题本">
-            {showWrongBook ? '📖' : '📕'} {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
+          <button className="icon-btn" onClick={() => setRightPanelTab(rightPanelTab === 'dashboard' ? 'wrongbook' : 'dashboard')} title="错题本">
+            📕 {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
           </button>
           <button className="icon-btn" onClick={() => setDarkMode(!darkMode)} title="切换暗色模式">
             {darkMode ? '☀️' : '🌙'}
@@ -238,33 +251,98 @@ export default function App() {
           )}
         </main>
 
-        {/* Wrong book panel */}
-        {showWrongBook && (
-          <aside className="wrong-book">
-            <div className="wrong-book-header">
-              <strong>📕 错题本 ({wrongItems.length})</strong>
-              <button className="icon-btn" onClick={() => setShowWrongBook(false)}>✕</button>
-            </div>
-            {wrongItems.length === 0 ? (
-              <div className="wrong-book-empty">暂无错题，继续加油！🎉</div>
-            ) : (
-              <div className="wrong-book-list">
-                {wrongItems.map((item, idx) => (
-                  <button
-                    key={`${item.question.id}-${idx}`}
-                    className="wrong-item-btn"
-                    onClick={() => { goToGroup(item.sectionIdx, item.groupIdx); setShowWrongBook(false) }}
-                  >
-                    <span className="wrong-item-section">{item.sectionName}</span>
-                    <span className="wrong-item-title">{item.groupTitle}</span>
-                    <span className="wrong-item-q">Q{item.qi + 1}: {item.question.text.substring(0, 40)}{item.question.text.length > 40 ? '…' : ''}</span>
-                    {item.question.answer && <span className="wrong-item-answer">答案: {item.question.answer}</span>}
-                  </button>
-                ))}
+        {/* Right panel - always visible */}
+        <aside className="right-panel">
+          {rightPanelTab === 'dashboard' ? (
+            <>
+              <div className="rp-header">
+                <strong>📊 学习面板</strong>
+                <button className="icon-btn" onClick={() => setRightPanelTab('wrongbook')} title="查看错题本">
+                  📕{wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
+                </button>
               </div>
-            )}
-          </aside>
-        )}
+              
+              {/* Overall stats */}
+              <div className="rp-stats">
+                <div className="rp-stat">
+                  <div className="rp-stat-val">{stats.answered}<span className="rp-stat-unit">/{stats.total}</span></div>
+                  <div className="rp-stat-label">已答</div>
+                </div>
+                <div className="rp-stat">
+                  <div className="rp-stat-val" style={{color: 'var(--correct)'}}>{stats.correct}</div>
+                  <div className="rp-stat-label">正确</div>
+                </div>
+                <div className="rp-stat">
+                  <div className="rp-stat-val" style={{color: stats.wrong > 0 ? 'var(--wrong)' : 'var(--text-secondary)'}}>{stats.wrong}</div>
+                  <div className="rp-stat-label">错题</div>
+                </div>
+              </div>
+              
+              <div className="rp-progress-bar-wrap">
+                <div className="rp-progress-bar">
+                  <i style={{width: `${stats.pct}%`}} />
+                </div>
+                <span className="rp-pct">{stats.pct}%</span>
+              </div>
+
+              {/* Chapter progress */}
+              <div className="rp-section-title">章节进度</div>
+              {chapterStats.map(cs => (
+                <div key={cs.name} className="rp-chapter">
+                  <div className="rp-chapter-header">
+                    <span className="rp-chapter-name">{cs.name}</span>
+                    <span className="rp-chapter-count">{cs.done}/{cs.total}</span>
+                  </div>
+                  <div className="rp-chapter-bar">
+                    <i style={{width: `${cs.pct}%`, background: cs.pct >= 80 ? 'var(--correct)' : cs.pct >= 40 ? '#ed8936' : 'var(--border)'}} />
+                  </div>
+                </div>
+              ))}
+
+              {/* Recent wrong items */}
+              {wrongItems.length > 0 && (
+                <>
+                  <div className="rp-section-title">最近错题</div>
+                  {wrongItems.slice(-3).reverse().map((item, idx) => (
+                    <button
+                      key={idx}
+                      className="rp-wrong-item"
+                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx) }}
+                    >
+                      <span className="rp-wrong-sec">{item.sectionName}</span>
+                      <span className="rp-wrong-text">{item.question.text.substring(0, 35)}…</span>
+                    </button>
+                  ))}
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="rp-header">
+                <strong>📕 错题本 ({wrongItems.length})</strong>
+                <button className="icon-btn" onClick={() => setRightPanelTab('dashboard')}>📊</button>
+              </div>
+              {wrongItems.length === 0 ? (
+                <div className="rp-empty">暂无错题 🎉</div>
+              ) : (
+                <div className="wrong-book-list">
+                  {wrongItems.map((item, idx) => (
+                    <button
+                      key={`${item.question.id}-${idx}`}
+                      className="wrong-item-btn"
+                      onClick={() => goToGroup(item.sectionIdx, item.groupIdx)}
+                    >
+                      <span className="wrong-item-section">{item.sectionName}</span>
+                      <span className="wrong-item-title">{item.groupTitle}</span>
+                      <span className="wrong-item-q">Q{item.qi + 1}: {item.question.text.substring(0, 40)}{item.question.text.length > 40 ? '…' : ''}</span>
+                      {item.question.answer && <span className="wrong-item-answer">答案: {item.question.answer}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </aside>
       </div>
     </div>
   )
