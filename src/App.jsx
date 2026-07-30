@@ -24,6 +24,7 @@ export default function App() {
   })
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [filterType, setFilterType] = useState('all') // 'all', 'b_type', 'qa'
+  const [showWrongBook, setShowWrongBook] = useState(false)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -86,7 +87,20 @@ export default function App() {
         }
       })
     })
-    return { total, answered, correct, pct: total ? Math.round(answered / total * 100) : 0 }
+    return { total, answered, correct, wrong: answered - correct, pct: total ? Math.round(answered / total * 100) : 0 }
+  }, [allGroups, progress])
+
+  // Wrong book items
+  const wrongItems = useMemo(() => {
+    const items = []
+    allGroups.forEach(({ sectionIdx: si, groupIdx: gi, section, group }) => {
+      group.questions.forEach((q, qi) => {
+        if (progress[q.id] === 'wrong') {
+          items.push({ sectionIdx: si, groupIdx: gi, sectionName: section.name, groupTitle: group.title, question: q, qi })
+        }
+      })
+    })
+    return items
   }, [allGroups, progress])
 
   const totalGroups = allGroups.length
@@ -117,6 +131,9 @@ export default function App() {
             <option value="qa">问答题</option>
           </select>
 
+          <button className="icon-btn" onClick={() => setShowWrongBook(!showWrongBook)} title="错题本">
+            {showWrongBook ? '📖' : '📕'} {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
+          </button>
           <button className="icon-btn" onClick={() => setDarkMode(!darkMode)} title="切换暗色模式">
             {darkMode ? '☀️' : '🌙'}
           </button>
@@ -220,6 +237,34 @@ export default function App() {
             </div>
           )}
         </main>
+
+        {/* Wrong book panel */}
+        {showWrongBook && (
+          <aside className="wrong-book">
+            <div className="wrong-book-header">
+              <strong>📕 错题本 ({wrongItems.length})</strong>
+              <button className="icon-btn" onClick={() => setShowWrongBook(false)}>✕</button>
+            </div>
+            {wrongItems.length === 0 ? (
+              <div className="wrong-book-empty">暂无错题，继续加油！🎉</div>
+            ) : (
+              <div className="wrong-book-list">
+                {wrongItems.map((item, idx) => (
+                  <button
+                    key={`${item.question.id}-${idx}`}
+                    className="wrong-item-btn"
+                    onClick={() => { goToGroup(item.sectionIdx, item.groupIdx); setShowWrongBook(false) }}
+                  >
+                    <span className="wrong-item-section">{item.sectionName}</span>
+                    <span className="wrong-item-title">{item.groupTitle}</span>
+                    <span className="wrong-item-q">Q{item.qi + 1}: {item.question.text.substring(0, 40)}{item.question.text.length > 40 ? '…' : ''}</span>
+                    {item.question.answer && <span className="wrong-item-answer">答案: {item.question.answer}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </aside>
+        )}
       </div>
     </div>
   )

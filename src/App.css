@@ -358,4 +358,50 @@ body {
   .top-actions { order: 3; width: 100%; }
   .group-title { font-size: 17px; }
   .letter-btn { min-width: 32px; height: 32px; font-size: 13px; }
-}
+  }
+
+  /* ===== Wrong Book ===== */
+  .wrong-book {
+    width: 300px; min-width: 300px;
+    background: var(--sidebar-bg); border-left: 1px solid var(--border);
+    overflow-y: auto; max-height: calc(100vh - 60px);
+    position: sticky; top: 60px;
+    display: flex; flex-direction: column;
+  }
+  .wrong-book-header {
+    padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border); font-size: 14px;
+    position: sticky; top: 0; background: var(--sidebar-bg); z-index: 2;
+  }
+  .wrong-book-empty {
+    padding: 40px 20px; text-align: center; color: var(--text-secondary); font-size: 14px;
+  }
+  .wrong-book-list {
+    padding: 8px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .wrong-item-btn {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 10px 12px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; text-align: left;
+    font-size: 12px; color: var(--text); transition: all 0.15s;
+  }
+  .wrong-item-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+  .wrong-item-section {
+    font-size: 10px; color: var(--primary); font-weight: 600;
+  }
+  .wrong-item-title {
+    font-size: 11px; color: var(--text-secondary);
+  }
+  .wrong-item-q {
+    font-size: 12px; font-weight: 500; line-height: 1.4;
+  }
+  .wrong-item-answer {
+    font-size: 11px; color: var(--correct); font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    .wrong-book {
+      position: fixed; top: 60px; right: 0; bottom: 0; z-index: 91;
+      width: 280px;
+    }
+  }
