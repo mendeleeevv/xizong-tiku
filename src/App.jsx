@@ -401,20 +401,7 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
         <span className="source-page">原题第{group.sourcePage}页</span>
       </div>
       <h2 className="group-title">{group.title}</h2>
-      <p className="group-hint">共用选项组保留在本题组内；每个题干独立作答，提交后逐题反馈。</p>
-
-      {/* Shared options */}
-      <div className="shared-options">
-        <div className="options-title">共用选项</div>
-        <div className="options-grid">
-          {group.sharedOptions.map(opt => (
-            <div key={opt.id} className="option-item">
-              <span className="opt-letter">{opt.id}</span>
-              <span className="opt-text">{opt.text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <p className="group-hint">每个题干独立作答，提交后逐题反馈。</p>
 
       {/* Questions */}
       {group.questions.map((q, qi) => {
