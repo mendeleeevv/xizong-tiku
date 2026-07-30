@@ -236,7 +236,7 @@ export default function App() {
               >
                 ← 上一组
               </button>
-              <span className="nav-pos">{allGroups.findIndex(g => g.sectionIdx === sectionIdx && g.groupIdx === groupIdx) + 1} / {totalGroups}</span>
+              <span className="nav-pos">{allGroups.findIndex(g => g.sectionIdx === sectionIdx && g.groupIdx === groupIdx) + 1} / {allGroups.length}</span>
               <button
                 className="nav-btn"
                 disabled={sectionIdx === sections.length - 1 && groupIdx === sections[sectionIdx].groups.length - 1}
