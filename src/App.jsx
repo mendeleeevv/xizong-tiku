@@ -441,7 +441,8 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
                   onClick={() => handleSelect(q.id, opt.id)}
                   disabled={isSubmitted}
                 >
-                  {opt.id}
+                  <span className="opt-label">选项 {opt.id}</span>
+                  <span className="opt-text-inline">{opt.text}</span>
                 </button>
               ))}
             </div>

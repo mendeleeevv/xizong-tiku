@@ -251,21 +251,35 @@ body {
 
 /* Answer buttons (B-type) */
 .answer-buttons {
-  display: flex; flex-wrap: wrap; gap: 6px;
+  display: flex; flex-direction: column; gap: 6px;
   margin-top: 10px;
 }
 .letter-btn {
-  min-width: 38px; height: 38px; border: 2px solid var(--border);
-  border-radius: 8px; background: var(--card-bg);
-  font-size: 15px; font-weight: 700; cursor: pointer;
-  color: var(--text); transition: all 0.12s;
+  display: flex; flex-direction: column; gap: 2px;
+  width: 100%; padding: 10px 14px;
+  border: 2px solid var(--border); border-radius: 10px;
+  background: var(--card-bg); font-size: 13px;
+  cursor: pointer; color: var(--text); transition: all 0.12s;
+  text-align: left;
 }
-.letter-btn:hover:not(:disabled) { border-color: var(--primary); }
+.letter-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--primary-light); }
 .letter-btn.selected {
   background: var(--primary); color: #fff; border-color: var(--primary);
 }
+.letter-btn.selected .opt-text-inline { color: rgba(255,255,255,0.85); }
+.letter-btn.selected .opt-label { color: rgba(255,255,255,0.7); }
 .letter-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.opt-label {
+  font-size: 10px; font-weight: 600; color: var(--primary); letter-spacing: 0.5px;
+}
+.opt-text-inline {
+  font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--text);
+}
 
+@media (max-width: 768px) {
+  .letter-btn { padding: 12px 14px; }
+  .opt-text-inline { font-size: 15px; }
+}
 .submit-btn {
   margin-top: 10px; padding: 6px 18px;
   background: var(--primary); color: #fff; border: none;
