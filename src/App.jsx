@@ -108,7 +108,6 @@ export default function App() {
 
   const toggleRightPanel = useCallback(() => {
     setRightPanelOpen(prev => !prev)
-    setSidebarOpen(false)
   }, [])
 
   const markQuestion = useCallback((qid, status) => {

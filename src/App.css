@@ -666,7 +666,9 @@ body::before {
 /* ===== Right Panel ===== */
 .right-panel {
   position: fixed; top: 0; right: 0; bottom: 0;
-  width: 300px; max-width: 85vw;
+  width: 300px; max-width: calc(85vw - 8px);
+  margin-right: 4px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
   background: var(--sidebar-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -901,6 +903,8 @@ body::before {
     position: sticky; top: 60px; z-index: auto;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    margin-right: 0;
+    border-radius: 0;
     transition: width 0.25s var(--ease-out), min-width 0.25s var(--ease-out), border 0.25s var(--ease-out);
   }
   .right-panel:not(.open) {
