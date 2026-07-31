@@ -522,52 +522,72 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
       <h2 className="group-title">{group.title}</h2>
       <p className="group-hint">每个题干独立作答，提交后逐题反馈。</p>
 
-      {group.questions.map((q, qi) => {
-        const userAns = answers[q.id] || ''
-        const isSubmitted = submitted[q.id]
-        const isCorrect = isSubmitted && userAns === q.answer
-        const isWrong = isSubmitted && userAns !== q.answer
-        const status = progress[q.id]
-
-        return (
-          <div key={q.id} id={`q-${q.id}`} className={`q-card ${isCorrect ? 'correct' : ''} ${isWrong ? 'wrong' : ''}`}>
-            <div className="q-header">
-              <span className="q-num">{qi + 1}</span>
-              <span className="q-text">{q.text}</span>
-              {status === 'correct' && <span className="q-status correct">✓</span>}
-              {status === 'wrong' && <span className="q-status wrong">✗</span>}
-            </div>
-
-            <div className="answer-buttons">
+      <div className="study-grid">
+        <div className="option-rail">
+          <div className="option-bank">
+            <div className="section-label">共用选项 <em>{group.sharedOptions.length} 项</em></div>
+            <div className="option-grid">
               {group.sharedOptions.map(opt => (
-                <button
-                  key={opt.id}
-                  className={`letter-btn ${userAns.includes(opt.id) ? 'selected' : ''}`}
-                  onClick={() => handleSelect(q.id, opt.id)}
-                  disabled={isSubmitted}
-                >
-                  <span className="opt-label">选项 {opt.id}</span>
-                  <span className="opt-text-inline">{opt.text}</span>
-                </button>
+                <div key={opt.id} className="shared-option">
+                  <b>{opt.id}</b>
+                  <span>{opt.text}</span>
+                </div>
               ))}
             </div>
-
-            {!isSubmitted && userAns && (
-              <button className="submit-btn" onClick={() => handleSubmit(q.id, q.answer)}>
-                提交答案
-              </button>
-            )}
-
-            {isSubmitted && (
-              <div className={`feedback ${isCorrect ? 'correct' : 'wrong'}`}>
-                {isCorrect ? '✅ 正确！' : `❌ 你的答案: ${userAns}，正确答案: ${q.answer}`}
-                {q.note && <span className="feedback-note">（{q.note}）</span>}
-                <button className="retry-btn" onClick={() => handleReset(q.id)}>重做</button>
-              </div>
-            )}
           </div>
-        )
-      })}
+        </div>
+
+        <div className="question-side">
+          {group.questions.map((q, qi) => {
+            const userAns = answers[q.id] || ''
+            const isSubmitted = submitted[q.id]
+            const isCorrect = isSubmitted && userAns === q.answer
+            const isWrong = isSubmitted && userAns !== q.answer
+            const status = progress[q.id]
+
+            return (
+              <div key={q.id} id={`q-${q.id}`} className={`q-card ${isCorrect ? 'correct' : ''} ${isWrong ? 'wrong' : ''}`}>
+                <div className="q-header">
+                  <span className="q-num">{qi + 1}</span>
+                  <span className="q-text">{q.text}</span>
+                  {status === 'correct' && <span className="q-status correct">✓</span>}
+                  {status === 'wrong' && <span className="q-status wrong">✗</span>}
+                </div>
+
+                <div className="q-body">
+                  <div className="answer-buttons">
+                    {group.sharedOptions.map(opt => (
+                      <button
+                        key={opt.id}
+                        className={`letter-btn ${userAns.includes(opt.id) ? 'selected' : ''}`}
+                        onClick={() => handleSelect(q.id, opt.id)}
+                        disabled={isSubmitted}
+                        title={opt.text}
+                      >
+                        {opt.id}
+                      </button>
+                    ))}
+                  </div>
+
+                  {!isSubmitted && userAns && (
+                    <button className="submit-btn" onClick={() => handleSubmit(q.id, q.answer)}>
+                      提交答案
+                    </button>
+                  )}
+
+                  {isSubmitted && (
+                    <div className={`feedback ${isCorrect ? 'correct' : 'wrong'}`}>
+                      {isCorrect ? '✅ 正确！' : `❌ 你的答案: ${userAns}，正确答案: ${q.answer}`}
+                      {q.note && <span className="feedback-note">（{q.note}）</span>}
+                      <button className="retry-btn" onClick={() => handleReset(q.id)}>重做</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
@@ -608,25 +628,27 @@ function QACard({ q, qi, progress, onMark }) {
         {status === 'wrong' && <span className="q-status wrong">✗</span>}
       </div>
 
-      {!revealed ? (
-        <button className="reveal-btn" onClick={handleReveal}>点击查看答案</button>
-      ) : (
-        <div className="answer-section">
-          <div className="answer-content">{q.answer}</div>
-          {!selfCheck ? (
-            <div className="self-check">
-              <span>你答对了吗？</span>
-              <button className="check-btn correct" onClick={() => handleSelfCheck('correct')}>✓ 答对了</button>
-              <button className="check-btn wrong" onClick={() => handleSelfCheck('wrong')}>✗ 再记一下</button>
-            </div>
-          ) : (
-            <div className="self-check-done">
-              {selfCheck === 'correct' ? '✅ 已标记为掌握' : '📝 已标记为需复习'}
-              <button className="retry-btn" onClick={() => { setRevealed(false); setSelfCheck(null); onMark(q.id, null) }}>重新来过</button>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="q-body">
+        {!revealed ? (
+          <button className="reveal-btn" onClick={handleReveal}>点击查看答案</button>
+        ) : (
+          <div className="answer-section">
+            <div className="answer-content">{q.answer}</div>
+            {!selfCheck ? (
+              <div className="self-check">
+                <span>你答对了吗？</span>
+                <button className="check-btn correct" onClick={() => handleSelfCheck('correct')}>✓ 答对了</button>
+                <button className="check-btn wrong" onClick={() => handleSelfCheck('wrong')}>✗ 再记一下</button>
+              </div>
+            ) : (
+              <div className="self-check-done">
+                {selfCheck === 'correct' ? '✅ 已标记为掌握' : '📝 已标记为需复习'}
+                <button className="retry-btn" onClick={() => { setRevealed(false); setSelfCheck(null); onMark(q.id, null) }}>重新来过</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
