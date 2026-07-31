@@ -181,44 +181,53 @@ export default function App() {
 
       {/* Top bar */}
       <header className="topbar">
-        <div className="brand" onClick={() => goToGroup(0, 0)} title="回到首页">
-          <button className="menu-btn" onClick={(e) => { e.stopPropagation(); toggleSidebar(); }} aria-label="目录">☰</button>
-          <strong>天天带背 · 生理 血液循环</strong>
-          <span className="brand-sub">124道高频考点</span>
+        <div className="topbar-left">
+          <button className="menu-btn" onClick={toggleSidebar} aria-label="目录">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div className="brand" onClick={() => goToGroup(0, 0)} title="回到首页">
+            <div className="brand-logo">🫀</div>
+            <div className="brand-text">
+              <span className="brand-title">天天带背</span>
+              <span className="brand-sub">生理 · 血液循环</span>
+            </div>
+          </div>
         </div>
 
-        <div className="top-actions">
+        <div className="topbar-center">
           <div className="search-wrap">
-            <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             <input
               placeholder="搜索题目 / 关键词"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
+        </div>
 
+        <div className="topbar-right">
           <select className="filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
             <option value="all">全部</option>
             <option value="b_type">B型题</option>
             <option value="qa">问答题</option>
           </select>
 
+          <div className="progress-strip" onClick={() => { setRightPanelOpen(true); setRightPanelTab('dashboard') }} title="打开学习面板">
+            <strong>{stats.answered}/{stats.total}</strong>
+            <div className="progress-bar"><i style={{ width: `${stats.pct}%` }} /></div>
+            <span>{stats.pct}%</span>
+          </div>
+
           <button className="icon-btn" onClick={toggleRightPanel} title="学习面板" aria-label="学习面板">
-            📊
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
           </button>
           <button className="icon-btn" onClick={() => { setRightPanelOpen(true); setRightPanelTab('wrongbook') }} title="错题本" aria-label="错题本">
-            📕 {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+            {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
           </button>
           <button className="icon-btn" onClick={() => setDarkMode(!darkMode)} title="切换暗色模式" aria-label="切换暗色模式">
             {darkMode ? '☀️' : '🌙'}
           </button>
-        </div>
-
-        <div className="progress-strip" onClick={() => { setRightPanelOpen(true); setRightPanelTab('dashboard') }} title="打开学习面板">
-          <span>进度</span>
-          <strong>{stats.answered} / {stats.total}</strong>
-          <div className="progress-bar"><i style={{ width: `${stats.pct}%` }} /></div>
-          <span>{stats.pct}%</span>
         </div>
       </header>
 
@@ -229,37 +238,36 @@ export default function App() {
             <strong>章节目录</strong>
             <button className="icon-btn" onClick={() => setSidebarOpen(false)} aria-label="关闭">✕</button>
           </div>
-          <div className="sidebar-search">
+          <div className="sidebar-content">
             {searchQuery && <div className="search-results-count">搜索到 {filteredGroups.length} 组</div>}
+            <nav>
+              {sections.map((section, si) => (
+                <div key={si} className="section-nav">
+                  <div className="section-title">{section.name}</div>
+                  {section.groups.map((group, gi) => {
+                    const isActive = si === sectionIdx && gi === groupIdx
+                    const done = group.questions.filter(q => progress[q.id] === 'correct').length
+                    return (
+                      <button
+                        key={gi}
+                        className={`group-nav-btn ${isActive ? 'active' : ''}`}
+                        onClick={() => goToGroup(si, gi)}
+                      >
+                        <span className={`type-badge ${group.type}`}>
+                          {group.type === 'b_type' ? 'B型' : '问答'}
+                        </span>
+                        <span className="group-nav-title">{group.title}</span>
+                        <span className="group-nav-progress">{done}/{group.questions.length}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+            </nav>
           </div>
-          <nav>
-            {sections.map((section, si) => (
-              <div key={si} className="section-nav">
-                <div className="section-title">{section.name}</div>
-                {section.groups.map((group, gi) => {
-                  const isActive = si === sectionIdx && gi === groupIdx
-                  const done = group.questions.filter(q => progress[q.id] === 'correct').length
-                  return (
-                    <button
-                      key={gi}
-                      className={`group-nav-btn ${isActive ? 'active' : ''}`}
-                      onClick={() => goToGroup(si, gi)}
-                    >
-                      <span className={`type-badge ${group.type}`}>
-                        {group.type === 'b_type' ? 'B型' : '问答'}
-                      </span>
-                      <span className="group-nav-title">{group.title}</span>
-                      <span className="group-nav-progress">{done}/{group.questions.length}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            ))}
-          </nav>
 
           {/* Sidebar learning stats footer */}
           <div className="sidebar-footer">
-            <div className="sidebar-divider" />
             <div className="sf-stats">
               <div className="sf-stat">
                 <span className="sf-stat-val">{stats.answered}<span className="sf-stat-unit">/{stats.total}</span></span>
