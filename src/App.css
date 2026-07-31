@@ -762,20 +762,26 @@ html, body {
   grid-template-columns: minmax(0px, 1fr);
 }
 
+/* 悬浮共用选项面板 — fixed 定位，滚动时始终可见 */
 .option-rail {
-  max-height: calc(100vh - 120px);
-  position: sticky;
-  top: 90px;
-  overflow: auto;
+  position: fixed;
+  z-index: 50;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+/* 占位元素仅桌面端需要（fixed 后撑起 grid 左栏） */
+.option-rail-placeholder { display: block; }
+@media (max-width: 768px) {
+  .option-rail-placeholder { display: none; }
 }
 
 .option-bank {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius-lg);
-  margin-bottom: 15px;
   padding: 16px 15px 13px;
-  box-shadow: 0 7px 20px rgba(35, 62, 97, 0.024);
+  box-shadow: 0 10px 30px rgba(35, 62, 97, 0.1);
 }
 
 .section-label {

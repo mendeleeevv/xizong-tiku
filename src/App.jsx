@@ -478,6 +478,49 @@ function QuestionGroup({ sectionName, group, progress, onMark }) {
 function BTypeGroup({ sectionName, group, progress, onMark }) {
   const [answers, setAnswers] = useState({})
   const [submitted, setSubmitted] = useState({})
+  const railRef = useRef(null)
+  const gridRef = useRef(null)
+
+  // 悬浮选项面板：跟随 study-grid 的左栏位置，滚动时固定可见
+  useEffect(() => {
+    const rail = railRef.current
+    const grid = gridRef.current
+    if (!rail || !grid) return
+
+    const update = () => {
+      // 移动端：恢复静态布局
+      if (window.innerWidth <= 768) {
+        rail.style.cssText = ''
+        return
+      }
+      const placeholder = grid.querySelector('.option-rail-placeholder')
+      const anchor = placeholder || grid
+      const rect = anchor.getBoundingClientRect()
+      const topbarH = 72
+      const gap = 16
+      const top = topbarH + gap
+      const maxH = window.innerHeight - top - gap
+      rail.style.left = `${rect.left}px`
+      rail.style.top = `${top}px`
+      rail.style.width = `${rect.width}px`
+      rail.style.maxHeight = `${maxH}px`
+    }
+
+    update()
+    // 监听内容区滚动（.content 是滚动容器）+ 窗口缩放 + grid 尺寸变化（侧栏开合）
+    const scroller = document.querySelector('.content')
+    scroller?.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(grid)
+    return () => {
+      scroller?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
+  }, [])
 
   const handleSelect = (qid, letter) => {
     if (submitted[qid]) return
@@ -522,8 +565,10 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
       <h2 className="group-title">{group.title}</h2>
       <p className="group-hint">每个题干独立作答，提交后逐题反馈。</p>
 
-      <div className="study-grid">
-        <div className="option-rail">
+      <div className="study-grid" ref={gridRef}>
+        {/* 占位元素：保持 grid 第一列宽度，fixed 面板以其为定位锚点 */}
+        <div className="option-rail-placeholder" aria-hidden="true" />
+        <div className="option-rail" ref={railRef}>
           <div className="option-bank">
             <div className="section-label">共用选项 <em>{group.sharedOptions.length} 项</em></div>
             <div className="option-grid">
