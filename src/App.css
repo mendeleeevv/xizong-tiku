@@ -758,40 +758,63 @@ html, body {
 .answer-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  justify-content: flex-end;
-  max-width: 230px;
-  margin-left: auto;
+  gap: 8px;
 }
+
 .letter-btn {
-  width: 29px;
-  height: 29px;
-  border: 1px solid #d9e1ec;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  background: #fbfcfe;
-  font-size: 12px;
-  font-weight: 700;
+  background: var(--surface);
+  font-size: 13px;
   cursor: pointer;
-  color: #5f6f85;
+  color: var(--text);
   transition: all var(--duration-fast) var(--ease-out);
-  display: grid;
-  place-items: center;
-  position: relative;
+  text-align: left;
+  min-height: 40px;
+  -webkit-tap-highlight-color: transparent;
 }
 .letter-btn:hover:not(:disabled) {
-  color: var(--blue);
-  background: #f2f7ff;
-  border-color: #a9c7f7;
+  border-color: var(--blue);
+  background: var(--blue-soft);
 }
+.letter-btn:active:not(:disabled) { transform: scale(0.99); }
 .letter-btn.selected {
-  color: #fff;
   background: var(--blue);
+  color: #fff;
   border-color: var(--blue);
   box-shadow: 0 4px 10px rgba(28, 99, 220, 0.2);
 }
-.letter-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.letter-btn.selected span { color: rgba(255,255,255,0.9); }
+.letter-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.letter-btn b {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  transition: all var(--duration-fast);
+}
+.letter-btn.selected b {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.letter-btn span {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--text);
+  transition: color var(--duration-fast);
 }
 
 .submit-btn {
@@ -1353,11 +1376,6 @@ html, body {
 
 /* ===== Mobile adjustments ===== */
 @media (max-width: 768px) {
-  .answer-buttons {
-    justify-content: flex-start;
-    max-width: none;
-    padding-left: 30px;
-  }
 }
 
 /* ===== Reduced motion ===== */

@@ -547,9 +547,8 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
                         className={`letter-btn ${userAns.includes(opt.id) ? 'selected' : ''}`}
                         onClick={() => handleSelect(q.id, opt.id)}
                         disabled={isSubmitted}
-                        title={opt.text}
                       >
-                        {opt.id}
+                        <b>{opt.id}</b><span>{opt.text}</span>
                       </button>
                     ))}
                   </div>
