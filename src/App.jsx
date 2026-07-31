@@ -22,15 +22,25 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('xizong-dark') === '1'
   })
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [filterType, setFilterType] = useState('all')
-  const [showWrongBook, setShowWrongBook] = useState(false)
-  const [rightPanelTab, setRightPanelTab] = useState('dashboard') // 'dashboard' | 'wrongbook'
+  const [rightPanelTab, setRightPanelTab] = useState('dashboard')
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
     localStorage.setItem('xizong-dark', darkMode ? '1' : '0')
   }, [darkMode])
+
+  // Auto-close drawers on desktop resize
+  useEffect(() => {
+    const onResize = () => {
+      // On desktop/tablet (>=769px), drawers are inline — always show
+      // but we can still keep them open for consistency
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const sections = quizData.sections
 
@@ -51,7 +61,6 @@ export default function App() {
     return allGroups.filter(({ group }) => {
       if (filterType !== 'all' && group.type !== filterType) return false
       if (!q) return true
-      // Search in questions
       return group.questions.some(qq =>
         qq.text.toLowerCase().includes(q) ||
         (qq.answer && qq.answer.toLowerCase().includes(q))
@@ -66,6 +75,23 @@ export default function App() {
   const goToGroup = useCallback((si, gi) => {
     setSectionIdx(si)
     setGroupIdx(gi)
+    // Close mobile drawer after navigation
+    setSidebarOpen(false)
+  }, [])
+
+  const closeAllDrawers = useCallback(() => {
+    setSidebarOpen(false)
+    setRightPanelOpen(false)
+  }, [])
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen(prev => !prev)
+    setRightPanelOpen(false)
+  }, [])
+
+  const toggleRightPanel = useCallback(() => {
+    setRightPanelOpen(prev => !prev)
+    setSidebarOpen(false)
   }, [])
 
   const markQuestion = useCallback((qid, status) => {
@@ -118,12 +144,29 @@ export default function App() {
     })
   }, [sections, progress])
 
+  // Current position for bottom nav
+  const currentPos = allGroups.findIndex(g => g.sectionIdx === sectionIdx && g.groupIdx === groupIdx)
+  const canGoPrev = !searchQuery && currentPos > 0
+  const canGoNext = !searchQuery && currentPos < allGroups.length - 1
+
+  const handlePrev = () => {
+    if (canGoPrev) goToGroup(allGroups[currentPos - 1].sectionIdx, allGroups[currentPos - 1].groupIdx)
+  }
+  const handleNext = () => {
+    if (canGoNext) goToGroup(allGroups[currentPos + 1].sectionIdx, allGroups[currentPos + 1].groupIdx)
+  }
+
+  const drawerOpen = sidebarOpen || rightPanelOpen
+
   return (
     <div className={`app ${darkMode ? 'dark' : ''}`}>
+      {/* Overlay for mobile drawers */}
+      <div className={`overlay ${drawerOpen ? 'show' : ''}`} onClick={closeAllDrawers} />
+
       {/* Top bar */}
       <header className="topbar">
         <div className="brand">
-          <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <button className="menu-btn" onClick={toggleSidebar} aria-label="目录">☰</button>
           <strong>天天带背 · 生理 血液循环</strong>
           <span className="brand-sub">124道高频考点</span>
         </div>
@@ -139,15 +182,18 @@ export default function App() {
           </div>
 
           <select className="filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
-            <option value="all">全部题型</option>
-            <option value="b_type">B型选择题</option>
+            <option value="all">全部</option>
+            <option value="b_type">B型题</option>
             <option value="qa">问答题</option>
           </select>
 
-          <button className="icon-btn" onClick={() => setRightPanelTab(rightPanelTab === 'dashboard' ? 'wrongbook' : 'dashboard')} title="错题本">
+          <button className="icon-btn" onClick={toggleRightPanel} title="学习面板" aria-label="学习面板">
+            📊
+          </button>
+          <button className="icon-btn" onClick={() => { setRightPanelOpen(true); setRightPanelTab('wrongbook') }} title="错题本" aria-label="错题本">
             📕 {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
           </button>
-          <button className="icon-btn" onClick={() => setDarkMode(!darkMode)} title="切换暗色模式">
+          <button className="icon-btn" onClick={() => setDarkMode(!darkMode)} title="切换暗色模式" aria-label="切换暗色模式">
             {darkMode ? '☀️' : '🌙'}
           </button>
         </div>
@@ -160,12 +206,12 @@ export default function App() {
         </div>
       </header>
 
-      <div className={`layout ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
+      <div className="layout">
         {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <strong>章节目录</strong>
-            <button className="icon-btn" onClick={() => setSidebarOpen(false)}>✕</button>
+            <button className="icon-btn" onClick={() => setSidebarOpen(false)} aria-label="关闭">✕</button>
           </div>
           <div className="sidebar-search">
             {searchQuery && <div className="search-results-count">搜索到 {filteredGroups.length} 组</div>}
@@ -196,9 +242,6 @@ export default function App() {
           </nav>
         </aside>
 
-        {/* Overlay for mobile */}
-        {/* no overlay - sidebar stays open until ✕ clicked */}
-
         {/* Main content */}
         <main className="content">
           {searchQuery && filteredGroups.length === 0 ? (
@@ -223,43 +266,32 @@ export default function App() {
             />
           ) : null}
 
-          {/* Navigation arrows */}
+          {/* Navigation arrows (desktop/tablet) */}
           {!searchQuery && (
             <div className="nav-footer">
-              <button
-                className="nav-btn"
-                disabled={sectionIdx === 0 && groupIdx === 0}
-                onClick={() => {
-                  const gi = allGroups.findIndex(g => g.sectionIdx === sectionIdx && g.groupIdx === groupIdx)
-                  if (gi > 0) goToGroup(allGroups[gi - 1].sectionIdx, allGroups[gi - 1].groupIdx)
-                }}
-              >
+              <button className="nav-btn" disabled={!canGoPrev} onClick={handlePrev}>
                 ← 上一组
               </button>
-              <span className="nav-pos">{allGroups.findIndex(g => g.sectionIdx === sectionIdx && g.groupIdx === groupIdx) + 1} / {allGroups.length}</span>
-              <button
-                className="nav-btn"
-                disabled={sectionIdx === sections.length - 1 && groupIdx === sections[sectionIdx].groups.length - 1}
-                onClick={() => {
-                  const gi = allGroups.findIndex(g => g.sectionIdx === sectionIdx && g.groupIdx === groupIdx)
-                  if (gi < allGroups.length - 1) goToGroup(allGroups[gi + 1].sectionIdx, allGroups[gi + 1].groupIdx)
-                }}
-              >
+              <span className="nav-pos">{currentPos + 1} / {allGroups.length}</span>
+              <button className="nav-btn" disabled={!canGoNext} onClick={handleNext}>
                 下一组 →
               </button>
             </div>
           )}
         </main>
 
-        {/* Right panel - always visible */}
-        <aside className="right-panel">
+        {/* Right panel */}
+        <aside className={`right-panel ${rightPanelOpen ? 'open' : ''}`}>
           {rightPanelTab === 'dashboard' ? (
             <>
               <div className="rp-header">
                 <strong>📊 学习面板</strong>
-                <button className="icon-btn" onClick={() => setRightPanelTab('wrongbook')} title="查看错题本">
-                  📕{wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
-                </button>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button className="icon-btn" onClick={() => setRightPanelTab('wrongbook')} title="查看错题本">
+                    📕{wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
+                  </button>
+                  <button className="icon-btn right-panel-header-close" onClick={() => setRightPanelOpen(false)} aria-label="关闭">✕</button>
+                </div>
               </div>
               
               {/* Overall stats */}
@@ -307,7 +339,7 @@ export default function App() {
                     <button
                       key={idx}
                       className="rp-wrong-item"
-                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx) }}
+                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx); setRightPanelOpen(false) }}
                     >
                       <span className="rp-wrong-sec">{item.sectionName}</span>
                       <span className="rp-wrong-text">{item.question.text.substring(0, 35)}…</span>
@@ -320,7 +352,10 @@ export default function App() {
             <>
               <div className="rp-header">
                 <strong>📕 错题本 ({wrongItems.length})</strong>
-                <button className="icon-btn" onClick={() => setRightPanelTab('dashboard')}>📊</button>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button className="icon-btn" onClick={() => setRightPanelTab('dashboard')}>📊</button>
+                  <button className="icon-btn" onClick={() => setRightPanelOpen(false)} aria-label="关闭">✕</button>
+                </div>
               </div>
               {wrongItems.length === 0 ? (
                 <div className="rp-empty">暂无错题 🎉</div>
@@ -330,7 +365,7 @@ export default function App() {
                     <button
                       key={`${item.question.id}-${idx}`}
                       className="wrong-item-btn"
-                      onClick={() => goToGroup(item.sectionIdx, item.groupIdx)}
+                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx); setRightPanelOpen(false) }}
                     >
                       <span className="wrong-item-section">{item.sectionName}</span>
                       <span className="wrong-item-title">{item.groupTitle}</span>
@@ -344,6 +379,31 @@ export default function App() {
           )}
         </aside>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {!searchQuery && (
+        <nav className="mobile-bottom-nav">
+          <button className="mbn-item" onClick={toggleSidebar}>
+            <span className="mbn-icon">📋</span>
+            <span className="mbn-label">目录</span>
+          </button>
+          <button className={`mbn-item ${!canGoPrev ? 'disabled' : ''}`} onClick={handlePrev} disabled={!canGoPrev} style={{ opacity: canGoPrev ? 1 : 0.3 }}>
+            <span className="mbn-icon">⬅️</span>
+            <span className="mbn-label">上一组</span>
+          </button>
+          <button className="mbn-item" onClick={toggleRightPanel}>
+            <span className="mbn-icon">
+              📊
+              {wrongItems.length > 0 && <span className="mbn-badge">{wrongItems.length}</span>}
+            </span>
+            <span className="mbn-label">{stats.pct}%</span>
+          </button>
+          <button className={`mbn-item ${!canGoNext ? 'disabled' : ''}`} onClick={handleNext} disabled={!canGoNext} style={{ opacity: canGoNext ? 1 : 0.3 }}>
+            <span className="mbn-icon">➡️</span>
+            <span className="mbn-label">下一组</span>
+          </button>
+        </nav>
+      )}
     </div>
   )
 }
@@ -366,7 +426,6 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
       if (current.includes(letter)) {
         return { ...prev, [qid]: current.replace(letter, '') }
       }
-      // Sort letters
       const newVal = (current + letter).split('').sort().join('')
       return { ...prev, [qid]: newVal }
     })
@@ -403,7 +462,6 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
       <h2 className="group-title">{group.title}</h2>
       <p className="group-hint">每个题干独立作答，提交后逐题反馈。</p>
 
-      {/* Questions */}
       {group.questions.map((q, qi) => {
         const userAns = answers[q.id] || ''
         const isSubmitted = submitted[q.id]
@@ -472,7 +530,7 @@ function QAGroup({ sectionName, group, progress, onMark }) {
 
 function QACard({ q, qi, progress, onMark }) {
   const [revealed, setRevealed] = useState(false)
-  const [selfCheck, setSelfCheck] = useState(null) // null, 'correct', 'wrong'
+  const [selfCheck, setSelfCheck] = useState(null)
   const status = progress[q.id]
 
   const handleReveal = () => setRevealed(true)
