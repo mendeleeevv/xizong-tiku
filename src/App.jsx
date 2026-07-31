@@ -253,6 +253,42 @@ export default function App() {
               </div>
             ))}
           </nav>
+
+          {/* Sidebar learning stats footer */}
+          <div className="sidebar-footer">
+            <div className="sidebar-divider" />
+            <div className="sf-stats">
+              <div className="sf-stat">
+                <span className="sf-stat-val">{stats.answered}<span className="sf-stat-unit">/{stats.total}</span></span>
+                <span className="sf-stat-label">已答</span>
+              </div>
+              <div className="sf-stat">
+                <span className="sf-stat-val sf-correct">{stats.correct}</span>
+                <span className="sf-stat-label">正确</span>
+              </div>
+              <div className="sf-stat">
+                <span className="sf-stat-val sf-wrong">{stats.wrong}</span>
+                <span className="sf-stat-label">错题</span>
+              </div>
+            </div>
+            <div className="sf-progress-bar">
+              <i style={{ width: `${stats.pct}%` }} />
+            </div>
+            <div className="sf-actions">
+              <button
+                className="sf-action-btn"
+                onClick={() => { setRightPanelOpen(true); setRightPanelTab('dashboard'); setSidebarOpen(false) }}
+              >
+                📊 学习面板
+              </button>
+              <button
+                className="sf-action-btn sf-wrong-btn"
+                onClick={() => { setRightPanelOpen(true); setRightPanelTab('wrongbook'); setSidebarOpen(false) }}
+              >
+                📕 错题本 {wrongItems.length > 0 && <span className="sf-badge">{wrongItems.length}</span>}
+              </button>
+            </div>
+          </div>
         </aside>
 
         {/* Main content */}
