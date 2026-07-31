@@ -25,7 +25,9 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     return window.innerWidth >= 769
   })
-  const [rightPanelOpen, setRightPanelOpen] = useState(false)
+  const [rightPanelOpen, setRightPanelOpen] = useState(() => {
+    return window.innerWidth >= 769
+  })
   const [filterType, setFilterType] = useState('all')
   const [rightPanelTab, setRightPanelTab] = useState('dashboard')
   const [scrollToQid, setScrollToQid] = useState(null)
