@@ -882,8 +882,13 @@ body::before {
     position: sticky; top: 60px; z-index: auto;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    transition: width 0.25s var(--ease-out), min-width 0.25s var(--ease-out), border 0.25s var(--ease-out);
   }
-  .sidebar-header .icon-btn { display: none; }
+  .sidebar:not(.open) {
+    width: 0; min-width: 0; border-right: none;
+    overflow: hidden; padding: 0;
+  }
+  .sidebar-header .icon-btn { display: flex; }
   
   .content { padding: 24px 28px 40px; max-width: none; }
   

@@ -22,7 +22,9 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('xizong-dark') === '1'
   })
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    return window.innerWidth >= 769
+  })
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [filterType, setFilterType] = useState('all')
   const [rightPanelTab, setRightPanelTab] = useState('dashboard')
