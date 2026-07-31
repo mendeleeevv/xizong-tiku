@@ -42,12 +42,10 @@ export default function App() {
         const el = document.getElementById(`q-${scrollToQid}`)
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          // Highlight briefly
-          el.style.transition = 'box-shadow 0.3s'
-          el.style.boxShadow = '0 0 0 3px var(--primary)'
+          el.classList.add('highlight-flash')
           setTimeout(() => {
-            el.style.boxShadow = ''
-          }, 1500)
+            el.classList.remove('highlight-flash')
+          }, 1200)
         }
         setScrollToQid(null)
       }, 150)
