@@ -1,5 +1,16 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import quizData from './data'
+import physioData from './data'
+
+const SUBJECTS = {
+  physio: {
+    key: 'physio',
+    label: '生理',
+    title: '生理学 · 血液循环',
+    subtitle: '306 西综（生理学）',
+    sectionLabel: '章节',
+    content: physioData,
+  },
+}
 
 const STORAGE_KEY = 'xizong-tiku-progress'
 
@@ -19,6 +30,9 @@ export default function App() {
   const [groupIdx, setGroupIdx] = useState(0)
   const [progress, setProgress] = useState(loadProgress)
   const [searchQuery, setSearchQuery] = useState('')
+  const [subjectKey, setSubjectKey] = useState(() => {
+    return localStorage.getItem('xizong-subject') || 'physio'
+  })
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('xizong-dark') === '1'
   })
@@ -57,7 +71,18 @@ export default function App() {
     }
   }, [scrollToQid, sectionIdx, groupIdx])
 
+  const subject = SUBJECTS[subjectKey] || SUBJECTS.physio
+  const quizData = subject.content
   const sections = quizData.sections
+
+  const handleSwitchSubject = useCallback((key) => {
+    setSubjectKey(key)
+    localStorage.setItem('xizong-subject', key)
+    setSectionIdx(0)
+    setGroupIdx(0)
+    setSearchQuery('')
+  }, [])
+
 
   // Flatten all groups for navigation
   const allGroups = useMemo(() => {
@@ -185,11 +210,22 @@ export default function App() {
           <button className="menu-btn" onClick={toggleSidebar} aria-label="目录">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
+          <div className="subject-switch">
+            {Object.values(SUBJECTS).map(s => (
+              <button
+                key={s.key}
+                className={subjectKey === s.key ? 'active' : ''}
+                onClick={() => handleSwitchSubject(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
           <div className="brand" onClick={() => goToGroup(0, 0)} title="回到首页">
             <div className="brand-logo">🫀</div>
             <div className="brand-text">
-              <span className="brand-title">天天带背</span>
-              <span className="brand-sub">生理 · 血液循环</span>
+              <span className="brand-title">{subject.title}</span>
+              <span className="brand-sub">{subject.subtitle}</span>
             </div>
           </div>
         </div>
@@ -235,7 +271,7 @@ export default function App() {
         {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
-            <strong>章节目录</strong>
+            <strong>{subject.sectionLabel}</strong>
             <button className="icon-btn" onClick={() => setSidebarOpen(false)} aria-label="关闭">✕</button>
           </div>
           <div className="sidebar-content">

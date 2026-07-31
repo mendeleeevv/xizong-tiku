@@ -167,6 +167,37 @@ html, body {
 }
 .menu-btn:active { transform: scale(0.94); }
 
+/* ===== Subject Switch ===== */
+.subject-switch {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 9px;
+  padding: 3px;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.subject-switch button {
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  min-width: 48px;
+  height: 30px;
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.subject-switch button:hover {
+  color: var(--blue);
+}
+.subject-switch button.active {
+  color: #fff;
+  background: var(--blue);
+  box-shadow: 0 4px 10px rgba(28, 99, 220, 0.2);
+}
+
 .brand {
   display: flex;
   align-items: center;
