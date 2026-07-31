@@ -181,7 +181,7 @@ export default function App() {
       {/* Top bar */}
       <header className="topbar">
         <div className="brand" onClick={() => goToGroup(0, 0)} title="回到首页">
-          <button className="menu-btn" onClick={toggleSidebar} aria-label="目录">☰</button>
+          <button className="menu-btn" onClick={(e) => { e.stopPropagation(); toggleSidebar(); }} aria-label="目录">☰</button>
           <strong>天天带背 · 生理 血液循环</strong>
           <span className="brand-sub">124道高频考点</span>
         </div>
