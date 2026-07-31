@@ -26,21 +26,34 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [filterType, setFilterType] = useState('all')
   const [rightPanelTab, setRightPanelTab] = useState('dashboard')
+  const [scrollToQid, setScrollToQid] = useState(null)
+  const contentRef = useRef(null)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
     localStorage.setItem('xizong-dark', darkMode ? '1' : '0')
   }, [darkMode])
 
-  // Auto-close drawers on desktop resize
+  // Scroll to question after navigation
   useEffect(() => {
-    const onResize = () => {
-      // On desktop/tablet (>=769px), drawers are inline — always show
-      // but we can still keep them open for consistency
+    if (scrollToQid) {
+      // Small delay to let React re-render new group
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`q-${scrollToQid}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          // Highlight briefly
+          el.style.transition = 'box-shadow 0.3s'
+          el.style.boxShadow = '0 0 0 3px var(--primary)'
+          setTimeout(() => {
+            el.style.boxShadow = ''
+          }, 1500)
+        }
+        setScrollToQid(null)
+      }, 150)
+      return () => clearTimeout(timer)
     }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
+  }, [scrollToQid, sectionIdx, groupIdx])
 
   const sections = quizData.sections
 
@@ -72,11 +85,13 @@ export default function App() {
   // Current group
   const currentGroup = sections[sectionIdx]?.groups[groupIdx]
 
-  const goToGroup = useCallback((si, gi) => {
+  const goToGroup = useCallback((si, gi, qid) => {
     setSectionIdx(si)
     setGroupIdx(gi)
-    // Close mobile drawer after navigation
     setSidebarOpen(false)
+    if (qid) {
+      setScrollToQid(qid)
+    }
   }, [])
 
   const closeAllDrawers = useCallback(() => {
@@ -339,7 +354,7 @@ export default function App() {
                     <button
                       key={idx}
                       className="rp-wrong-item"
-                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx); setRightPanelOpen(false) }}
+                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx, item.question.id); setRightPanelOpen(false) }}
                     >
                       <span className="rp-wrong-sec">{item.sectionName}</span>
                       <span className="rp-wrong-text">{item.question.text.substring(0, 35)}…</span>
@@ -365,7 +380,7 @@ export default function App() {
                     <button
                       key={`${item.question.id}-${idx}`}
                       className="wrong-item-btn"
-                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx); setRightPanelOpen(false) }}
+                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx, item.question.id); setRightPanelOpen(false) }}
                     >
                       <span className="wrong-item-section">{item.sectionName}</span>
                       <span className="wrong-item-title">{item.groupTitle}</span>
@@ -470,7 +485,7 @@ function BTypeGroup({ sectionName, group, progress, onMark }) {
         const status = progress[q.id]
 
         return (
-          <div key={q.id} className={`q-card ${isCorrect ? 'correct' : ''} ${isWrong ? 'wrong' : ''}`}>
+          <div key={q.id} id={`q-${q.id}`} className={`q-card ${isCorrect ? 'correct' : ''} ${isWrong ? 'wrong' : ''}`}>
             <div className="q-header">
               <span className="q-num">{qi + 1}</span>
               <span className="q-text">{q.text}</span>
@@ -540,7 +555,7 @@ function QACard({ q, qi, progress, onMark }) {
   }
 
   return (
-    <div className={`q-card qa-card ${selfCheck === 'correct' ? 'correct' : ''} ${selfCheck === 'wrong' ? 'wrong' : ''}`}>
+    <div className={`q-card qa-card ${selfCheck === 'correct' ? 'correct' : ''} ${selfCheck === 'wrong' ? 'wrong' : ''}`} id={`q-${q.id}`}>
       <div className="q-header">
         <span className="q-num">{qi + 1}</span>
         <span className="q-text">{q.text}</span>
