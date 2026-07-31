@@ -751,85 +751,7 @@ html, body {
   padding: 14px 20px;
 }
 
-/* ===== Study Grid (B-type with shared options) ===== */
-.study-grid {
-  display: grid;
-  grid-template-columns: minmax(205px, 0.46fr) minmax(0px, 1fr);
-  align-items: start;
-  gap: 16px;
-}
-.study-grid.no-options {
-  grid-template-columns: minmax(0px, 1fr);
-}
-
-/* 悬浮共用选项面板 — fixed 定位，滚动时始终可见 */
-.option-rail {
-  position: fixed;
-  z-index: 50;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-}
-/* 占位元素仅桌面端需要（fixed 后撑起 grid 左栏） */
-.option-rail-placeholder { display: block; }
-@media (max-width: 768px) {
-  .option-rail-placeholder { display: none; }
-}
-
-.option-bank {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  padding: 16px 15px 13px;
-  box-shadow: 0 10px 30px rgba(35, 62, 97, 0.1);
-}
-
-.section-label {
-  color: var(--text-secondary);
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-}
-.section-label em {
-  color: var(--blue);
-  font-style: normal;
-  font-weight: 600;
-}
-
-.option-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-.shared-option {
-  color: var(--text-secondary);
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-  font-size: 13px;
-  line-height: 1.45;
-  display: flex;
-}
-.shared-option b {
-  width: 22px;
-  height: 22px;
-  color: var(--blue);
-  background: var(--blue-soft);
-  border-radius: 6px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 700;
-}
-.shared-option span {
-  padding-top: 2px;
-}
-
+/* ===== Question Side (B-type 每道题各自带选项) ===== */
 .question-side { min-width: 0; }
 
 /* ===== Answer Buttons (B-type) ===== */
@@ -1420,15 +1342,6 @@ html, body {
   .overlay { display: none !important; }
 
   .group-title { font-size: 30px; }
-
-  .study-grid {
-    grid-template-columns: minmax(205px, 0.46fr) minmax(0px, 1fr);
-  }
-  .option-rail {
-    max-height: calc(100vh - 120px);
-    position: sticky;
-    top: 90px;
-  }
 }
 
 /* ===== Desktop 1025+ ===== */
@@ -1440,16 +1353,6 @@ html, body {
 
 /* ===== Mobile adjustments ===== */
 @media (max-width: 768px) {
-  .study-grid {
-    display: block;
-  }
-  .option-rail {
-    max-height: none;
-    position: static;
-  }
-  .option-bank {
-    margin-bottom: 16px;
-  }
   .answer-buttons {
     justify-content: flex-start;
     max-width: none;
