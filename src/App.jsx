@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import physioData from './data'
 
 const SUBJECTS = {
@@ -67,6 +68,7 @@ function Icon({ name, size = 18, stroke = 'currentColor' }) {
     file: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h4M8 12h8M8 16h6" /></>,
     moon: <><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" /></>,
     sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
+    zoom: <><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /><path d="M11 8v6M8 11h6" /></>,
   }
   return <svg {...common}>{paths[name] || paths.book}</svg>
 }
@@ -763,6 +765,7 @@ function EvidenceTab({ item, progress }) {
   const pdfName = group.pdf === 'down' ? 'pdf/physio-down.pdf' : 'pdf/physio-up.pdf'
   const pdfPage = group.pdfPage || 1
   const pdfSrc = `${pdfName}#page=${pdfPage}`
+  const [pdfZoom, setPdfZoom] = useState(false)
 
   return (
     <div className="evidence-body">
@@ -784,6 +787,9 @@ function EvidenceTab({ item, progress }) {
         <div className="evidence-title">
           <span className="evidence-icon"><Icon name="file" size={18} /></span>
           <div><h2>原题 PDF</h2><p>{group.title} · 第 {pdfPage} 页</p></div>
+          <button className="pdf-zoom-btn" onClick={() => setPdfZoom(true)} title="放大查看">
+            <Icon name="zoom" size={15} /> 放大
+          </button>
         </div>
         <div className="evidence-pdf">
           <iframe
@@ -791,7 +797,9 @@ function EvidenceTab({ item, progress }) {
             title={`原题 PDF 第 ${pdfPage} 页`}
             loading="lazy"
           />
+          <div className="evidence-pdf-catcher" onClick={() => setPdfZoom(true)} role="button" aria-label="放大查看 PDF" />
         </div>
+        <p className="pdf-hint">点击 PDF 或「放大」按钮全屏查看，支持双指/滚轮缩放。</p>
       </div>
 
       {isB && answeredCount > 0 && (
@@ -799,6 +807,19 @@ function EvidenceTab({ item, progress }) {
           <Icon name={resultCount === group.questions.length ? 'check' : 'alert'} size={16} />
           <span>本组正确 {resultCount} / {group.questions.length}</span>
         </div>
+      )}
+
+      {pdfZoom && createPortal(
+        <div className="pdf-zoom-overlay" onClick={() => setPdfZoom(false)}>
+          <div className="pdf-zoom-box" onClick={e => e.stopPropagation()}>
+            <div className="pdf-zoom-header">
+              <strong>{group.title} · 第 {pdfPage} 页</strong>
+              <button className="pdf-zoom-close" onClick={() => setPdfZoom(false)} aria-label="关闭"><Icon name="close" size={18} /></button>
+            </div>
+            <iframe src={pdfSrc} title={`放大查看 ${group.title}`} />
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )
