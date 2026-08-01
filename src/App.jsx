@@ -12,114 +12,187 @@ const SUBJECTS = {
   },
 }
 
-const STORAGE_KEY = 'xizong-tiku-progress'
-
-function loadProgress() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    return saved ? JSON.parse(saved) : {}
-  } catch { return {} }
+const STORAGE = {
+  progress: 'xizong-tiku-progress',
+  favorites: 'xizong-tiku-favorites',
+  notes: 'xizong-tiku-notes',
+  subject: 'xizong-subject',
+  dark: 'xizong-dark',
 }
 
-function saveProgress(p) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
+function loadJSON(key, fallback) {
+  try {
+    const saved = localStorage.getItem(key)
+    return saved ? JSON.parse(saved) : fallback
+  } catch { return fallback }
+}
+
+function saveJSON(key, value) {
+  localStorage.setItem(key, JSON.stringify(value))
+}
+
+function kindLabel(group) {
+  return group.type === 'b_type' ? 'B型题' : '问答题'
+}
+
+function Icon({ name, size = 18, stroke = 'currentColor' }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke,
+    strokeWidth: 1.8,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  }
+  const paths = {
+    menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
+    book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z" /><path d="M4 5.5v16M8 7h7M8 11h7" /></>,
+    heart: <><path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.8Z" /><path d="M5 11h3l1.2-2.2 2.1 5 1.4-2.8H19" /></>,
+    search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></>,
+    chevron: <path d="m7 9 5 5 5-5" />,
+    arrow: <><path d="M5 12h13" /><path d="m13 6 6 6-6 6" /></>,
+    left: <><path d="M19 12H5" /><path d="m11 18-6-6 6-6" /></>,
+    right: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
+    bookmark: <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.5L6 21z" />,
+    bookmarkFill: <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-3.5L6 21z" fill="currentColor" />,
+    note: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></>,
+    eye: <><path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5z" /><circle cx="12" cy="12" r="2.2" /></>,
+    check: <path d="m5 12 4.2 4.2L19 6.5" />,
+    alert: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5M12 16h.01" /></>,
+    close: <><path d="m6 6 12 12M18 6 6 18" /></>,
+    chart: <><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></>,
+    file: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h4M8 12h8M8 16h6" /></>,
+    moon: <><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" /></>,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
+  }
+  return <svg {...common}>{paths[name] || paths.book}</svg>
 }
 
 export default function App() {
-  const [sectionIdx, setSectionIdx] = useState(0)
-  const [groupIdx, setGroupIdx] = useState(0)
-  const [progress, setProgress] = useState(loadProgress)
+  const [subjectKey, setSubjectKey] = useState(() => localStorage.getItem(STORAGE.subject) || 'physio')
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem(STORAGE.dark) === '1')
+  const [groupIndex, setGroupIndex] = useState(0)
+  const [progress, setProgress] = useState(() => loadJSON(STORAGE.progress, {}))
+  const [favorites, setFavorites] = useState(() => loadJSON(STORAGE.favorites, []))
+  const [notes, setNotes] = useState(() => loadJSON(STORAGE.notes, {}))
   const [searchQuery, setSearchQuery] = useState('')
-  const [subjectKey, setSubjectKey] = useState(() => {
-    return localStorage.getItem('xizong-subject') || 'physio'
-  })
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('xizong-dark') === '1'
-  })
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    return window.innerWidth >= 769
-  })
-  const [rightPanelOpen, setRightPanelOpen] = useState(() => {
-    return window.innerWidth >= 769
-  })
   const [filterType, setFilterType] = useState('all')
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 769)
+  const [rightPanelOpen, setRightPanelOpen] = useState(() => window.innerWidth >= 769)
   const [rightPanelTab, setRightPanelTab] = useState('dashboard')
   const [scrollToQid, setScrollToQid] = useState(null)
-  const contentRef = useRef(null)
+  const [showNote, setShowNote] = useState(false)
+  const searchRef = useRef(null)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
-    localStorage.setItem('xizong-dark', darkMode ? '1' : '0')
+    localStorage.setItem(STORAGE.dark, darkMode ? '1' : '0')
   }, [darkMode])
 
-  // Scroll to question after navigation
+  useEffect(() => saveJSON(STORAGE.progress, progress), [progress])
+  useEffect(() => saveJSON(STORAGE.favorites, favorites), [favorites])
+  useEffect(() => saveJSON(STORAGE.notes, notes), [notes])
+
+  useEffect(() => {
+    function onKey(event) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        searchRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   useEffect(() => {
     if (scrollToQid) {
-      // Small delay to let React re-render new group
       const timer = setTimeout(() => {
         const el = document.getElementById(`q-${scrollToQid}`)
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
           el.classList.add('highlight-flash')
-          setTimeout(() => {
-            el.classList.remove('highlight-flash')
-          }, 1200)
+          setTimeout(() => el.classList.remove('highlight-flash'), 1200)
         }
         setScrollToQid(null)
       }, 150)
       return () => clearTimeout(timer)
     }
-  }, [scrollToQid, sectionIdx, groupIdx])
+  }, [scrollToQid, groupIndex])
 
   const subject = SUBJECTS[subjectKey] || SUBJECTS.physio
-  const quizData = subject.content
-  const sections = quizData.sections
+  const sections = subject.content.sections
 
-  const handleSwitchSubject = useCallback((key) => {
-    setSubjectKey(key)
-    localStorage.setItem('xizong-subject', key)
-    setSectionIdx(0)
-    setGroupIdx(0)
-    setSearchQuery('')
-  }, [])
-
-
-  // Flatten all groups for navigation
   const allGroups = useMemo(() => {
     const result = []
     sections.forEach((section, si) => {
       section.groups.forEach((group, gi) => {
-        result.push({ sectionIdx: si, groupIdx: gi, section, group })
+        result.push({ sectionIdx: si, groupIdx: gi, section, group, id: `${si}-${gi}` })
       })
     })
     return result
   }, [sections])
 
-  // Filter groups by search
   const filteredGroups = useMemo(() => {
-    const q = searchQuery.toLowerCase()
-    return allGroups.filter(({ group }) => {
+    const q = searchQuery.trim().toLowerCase()
+    return allGroups.filter(({ section, group }) => {
       if (filterType !== 'all' && group.type !== filterType) return false
       if (!q) return true
-      return group.questions.some(qq =>
+      const inQuestions = group.questions.some(qq =>
         qq.text.toLowerCase().includes(q) ||
-        (qq.answer && qq.answer.toLowerCase().includes(q))
-      ) || (group.sharedOptions || []).some(o => o.text.toLowerCase().includes(q)) ||
-        group.title.toLowerCase().includes(q)
+        (qq.answer && qq.answer.toLowerCase().includes(q)) ||
+        (qq.note || '').toLowerCase().includes(q)
+      )
+      const inOptions = (group.sharedOptions || []).some(o => o.text.toLowerCase().includes(q))
+      return inQuestions || inOptions || group.title.toLowerCase().includes(q) || section.name.toLowerCase().includes(q)
     })
   }, [allGroups, searchQuery, filterType])
 
-  // Current group
-  const currentGroup = sections[sectionIdx]?.groups[groupIdx]
+  useEffect(() => {
+    if (groupIndex >= filteredGroups.length) setGroupIndex(0)
+  }, [filteredGroups.length, groupIndex])
+
+  const current = filteredGroups[groupIndex] || null
+  const totalGroups = filteredGroups.length
+
+  const totalQuestions = useMemo(() => allGroups.reduce((sum, g) => sum + g.group.questions.length, 0), [allGroups])
+  const sectionCounts = useMemo(() => sections.map(sec => ({
+    name: sec.name,
+    count: sec.groups.reduce((sum, g) => sum + g.questions.length, 0),
+  })), [sections])
+
+  const handleSwitchSubject = useCallback((key) => {
+    setSubjectKey(key)
+    localStorage.setItem(STORAGE.subject, key)
+    setGroupIndex(0)
+    setSearchQuery('')
+  }, [])
+
+  const goTo = useCallback((offset) => {
+    if (!filteredGroups.length) return
+    setGroupIndex(prev => (prev + offset + filteredGroups.length) % filteredGroups.length)
+    setShowNote(false)
+  }, [filteredGroups.length])
+
+  const jumpTo = useCallback((index) => {
+    if (!filteredGroups.length) return
+    setGroupIndex(Math.min(Math.max(index, 0), filteredGroups.length - 1))
+    setShowNote(false)
+  }, [filteredGroups.length])
 
   const goToGroup = useCallback((si, gi, qid) => {
-    setSectionIdx(si)
-    setGroupIdx(gi)
-    setSidebarOpen(false)
-    if (qid) {
-      setScrollToQid(qid)
+    const idx = allGroups.findIndex(g => g.sectionIdx === si && g.groupIdx === gi)
+    if (idx >= 0) {
+      setGroupIndex(idx)
+      setSearchQuery('')
+      setFilterType('all')
     }
-  }, [])
+    setSidebarOpen(false)
+    setShowNote(false)
+    if (qid) setScrollToQid(qid)
+  }, [allGroups])
 
   const closeAllDrawers = useCallback(() => {
     setSidebarOpen(false)
@@ -137,13 +210,21 @@ export default function App() {
 
   const markQuestion = useCallback((qid, status) => {
     setProgress(prev => {
-      const next = { ...prev, [qid]: status }
-      saveProgress(next)
+      const next = { ...prev }
+      if (status) next[qid] = status
+      else delete next[qid]
       return next
     })
   }, [])
 
-  // Stats
+  const toggleFavorite = useCallback((groupId) => {
+    setFavorites(prev => prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId])
+  }, [])
+
+  const setNote = useCallback((groupId, text) => {
+    setNotes(prev => ({ ...prev, [groupId]: text }))
+  }, [])
+
   const stats = useMemo(() => {
     let total = 0, answered = 0, correct = 0
     allGroups.forEach(({ group }) => {
@@ -158,22 +239,20 @@ export default function App() {
     return { total, answered, correct, wrong: answered - correct, pct: total ? Math.round(answered / total * 100) : 0 }
   }, [allGroups, progress])
 
-  // Wrong book items
   const wrongItems = useMemo(() => {
     const items = []
     allGroups.forEach(({ sectionIdx: si, groupIdx: gi, section, group }) => {
       group.questions.forEach((q, qi) => {
         if (progress[q.id] === 'wrong') {
-          items.push({ sectionIdx: si, groupIdx: gi, sectionName: section.name, groupTitle: group.title, question: q, qi })
+          items.push({ sectionIdx: si, groupIdx: gi, id: `${si}-${gi}`, sectionName: section.name, groupTitle: group.title, question: q, qi })
         }
       })
     })
     return items
   }, [allGroups, progress])
 
-  // Chapter stats
   const chapterStats = useMemo(() => {
-    return sections.map((section, si) => {
+    return sections.map(section => {
       let total = 0, done = 0
       section.groups.forEach(group => {
         group.questions.forEach(q => {
@@ -185,44 +264,31 @@ export default function App() {
     })
   }, [sections, progress])
 
-  // Current position for bottom nav
-  const currentPos = allGroups.findIndex(g => g.sectionIdx === sectionIdx && g.groupIdx === groupIdx)
-  const canGoPrev = !searchQuery && currentPos > 0
-  const canGoNext = !searchQuery && currentPos < allGroups.length - 1
+  const openPanel = useCallback((tab) => {
+    setRightPanelTab(tab)
+    setRightPanelOpen(true)
+  }, [])
 
-  const handlePrev = () => {
-    if (canGoPrev) goToGroup(allGroups[currentPos - 1].sectionIdx, allGroups[currentPos - 1].groupIdx)
-  }
-  const handleNext = () => {
-    if (canGoNext) goToGroup(allGroups[currentPos + 1].sectionIdx, allGroups[currentPos + 1].groupIdx)
-  }
-
-  const drawerOpen = sidebarOpen || rightPanelOpen
+  const favorite = current ? favorites.includes(current.id) : false
 
   return (
     <div className={`app ${darkMode ? 'dark' : ''}`}>
-      {/* Overlay for mobile drawers */}
-      <div className={`overlay ${drawerOpen ? 'show' : ''}`} onClick={closeAllDrawers} />
+      <div className={`overlay ${sidebarOpen || rightPanelOpen ? 'show' : ''}`} onClick={closeAllDrawers} />
 
-      {/* Top bar */}
       <header className="topbar">
         <div className="topbar-left">
           <button className="menu-btn" onClick={toggleSidebar} aria-label="目录">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <Icon name="menu" size={18} />
           </button>
           <div className="subject-switch">
             {Object.values(SUBJECTS).map(s => (
-              <button
-                key={s.key}
-                className={subjectKey === s.key ? 'active' : ''}
-                onClick={() => handleSwitchSubject(s.key)}
-              >
+              <button key={s.key} className={subjectKey === s.key ? 'active' : ''} onClick={() => handleSwitchSubject(s.key)}>
                 {s.label}
               </button>
             ))}
           </div>
           <div className="brand" onClick={() => goToGroup(0, 0)} title="回到首页">
-            <div className="brand-logo">🫀</div>
+            <div className="brand-logo"><Icon name="heart" size={19} stroke="white" /></div>
             <div className="brand-text">
               <span className="brand-title">{subject.title}</span>
               <span className="brand-sub">{subject.subtitle}</span>
@@ -232,68 +298,86 @@ export default function App() {
 
         <div className="topbar-center">
           <div className="search-wrap">
-            <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <Icon name="search" size={14} />
             <input
+              ref={searchRef}
               placeholder="搜索题目 / 关键词"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => { setSearchQuery(e.target.value); setGroupIndex(0) }}
             />
+            <kbd>⌘K</kbd>
           </div>
         </div>
 
         <div className="topbar-right">
-          <select className="filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
-            <option value="all">全部</option>
+          <select className="filter-select" value={filterType} onChange={e => { setFilterType(e.target.value); setGroupIndex(0) }}>
+            <option value="all">全部题型</option>
             <option value="b_type">B型题</option>
             <option value="qa">问答题</option>
           </select>
 
-          <div className="progress-strip" onClick={() => { setRightPanelOpen(true); setRightPanelTab('dashboard') }} title="打开学习面板">
-            <strong>{stats.answered}/{stats.total}</strong>
-            <div className="progress-bar"><i style={{ width: `${stats.pct}%` }} /></div>
-            <span>{stats.pct}%</span>
+          <div className="progress-strip" onClick={() => openPanel('dashboard')} title="打开学习面板">
+            <span>本轮进度</span>
+            <strong>{totalGroups ? Math.min(groupIndex + 1, totalGroups) : 0} / {totalGroups} 组</strong>
+            <div className="progress-bar"><i style={{ width: `${totalGroups ? ((groupIndex + 1) / totalGroups) * 100 : 0}%` }} /></div>
+            <span>{totalGroups ? Math.round(((groupIndex + 1) / totalGroups) * 100) : 0}%</span>
           </div>
 
-          <button className="icon-btn" onClick={toggleRightPanel} title="学习面板" aria-label="学习面板">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          <button className="icon-btn" onClick={() => openPanel('dashboard')} title="学习面板" aria-label="学习面板">
+            <Icon name="chart" size={16} />
           </button>
-          <button className="icon-btn" onClick={() => { setRightPanelOpen(true); setRightPanelTab('wrongbook') }} title="错题本" aria-label="错题本">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+          <button className="icon-btn" onClick={() => openPanel('evidence')} title="本题依据" aria-label="本题依据">
+            <Icon name="eye" size={16} />
+          </button>
+          <button className="icon-btn" onClick={() => openPanel('wrongbook')} title="错题本" aria-label="错题本">
+            <Icon name="book" size={16} />
             {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
           </button>
           <button className="icon-btn" onClick={() => setDarkMode(!darkMode)} title="切换暗色模式" aria-label="切换暗色模式">
-            {darkMode ? '☀️' : '🌙'}
+            <Icon name={darkMode ? 'sun' : 'moon'} size={16} />
           </button>
         </div>
       </header>
 
       <div className="layout">
-        {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <strong>{subject.sectionLabel}</strong>
-            <button className="icon-btn" onClick={() => setSidebarOpen(false)} aria-label="关闭">✕</button>
+            <button className="icon-btn" onClick={() => setSidebarOpen(false)} aria-label="关闭"><Icon name="close" size={14} /></button>
           </div>
           <div className="sidebar-content">
-            {searchQuery && <div className="search-results-count">搜索到 {filteredGroups.length} 组</div>}
+            {searchQuery || filterType !== 'all' ? (
+              <div className="search-results-count">
+                搜索到 {filteredGroups.length} 组
+                <button className="clear-filter-btn" onClick={() => { setSearchQuery(''); setFilterType('all'); setGroupIndex(0) }}>清除筛选</button>
+              </div>
+            ) : (
+              <button className={`group-nav-btn all-link ${groupIndex === 0 && !searchQuery && filterType === 'all' ? 'active' : ''}`} onClick={() => goToGroup(0, 0)}>
+                <span className="type-badge all">全部</span>
+                <span className="group-nav-title">全部题目</span>
+                <span className="group-nav-progress">{totalQuestions} 题</span>
+              </button>
+            )}
             <nav>
               {sections.map((section, si) => (
                 <div key={si} className="section-nav">
-                  <div className="section-title">{section.name}</div>
+                  <div className="section-title">
+                    {section.name}
+                    <em>{sectionCounts[si]?.count || 0} 题</em>
+                  </div>
                   {section.groups.map((group, gi) => {
-                    const isActive = si === sectionIdx && gi === groupIdx
+                    const isActive = current && current.sectionIdx === si && current.groupIdx === gi
                     const done = group.questions.filter(q => progress[q.id] === 'correct').length
+                    const isFavorite = favorites.includes(`${si}-${gi}`)
                     return (
-                      <button
-                        key={gi}
-                        className={`group-nav-btn ${isActive ? 'active' : ''}`}
-                        onClick={() => goToGroup(si, gi)}
-                      >
+                      <button key={gi} className={`group-nav-btn ${isActive ? 'active' : ''}`} onClick={() => goToGroup(si, gi)}>
                         <span className={`type-badge ${group.type}`}>
                           {group.type === 'b_type' ? 'B型' : '问答'}
                         </span>
                         <span className="group-nav-title">{group.title}</span>
-                        <span className="group-nav-progress">{done}/{group.questions.length}</span>
+                        <span className="group-nav-progress">
+                          {isFavorite ? '★ ' : ''}{done}/{group.questions.length}
+                        </span>
                       </button>
                     )
                   })}
@@ -302,8 +386,12 @@ export default function App() {
             </nav>
           </div>
 
-          {/* Sidebar learning stats footer */}
           <div className="sidebar-footer">
+            <div className="source-stat">
+              <span>题库来源</span>
+              <strong>{subject.title}</strong>
+              <small>{sections.length} 个章节 · {allGroups.length} 个题组 · {totalQuestions} 道题</small>
+            </div>
             <div className="sf-stats">
               <div className="sf-stat">
                 <span className="sf-stat-val">{stats.answered}<span className="sf-stat-unit">/{stats.total}</span></span>
@@ -318,184 +406,130 @@ export default function App() {
                 <span className="sf-stat-label">错题</span>
               </div>
             </div>
-            <div className="sf-progress-bar">
-              <i style={{ width: `${stats.pct}%` }} />
-            </div>
+            <div className="sf-progress-bar"><i style={{ width: `${stats.pct}%` }} /></div>
             <div className="sf-actions">
-              <button
-                className="sf-action-btn"
-                onClick={() => { setRightPanelOpen(true); setRightPanelTab('dashboard'); setSidebarOpen(false) }}
-              >
-                📊 学习面板
+              <button className="sf-action-btn" onClick={() => { openPanel('dashboard'); setSidebarOpen(false) }}>
+                <Icon name="chart" size={14} /> 学习面板
               </button>
-              <button
-                className="sf-action-btn sf-wrong-btn"
-                onClick={() => { setRightPanelOpen(true); setRightPanelTab('wrongbook'); setSidebarOpen(false) }}
-              >
-                📕 错题本 {wrongItems.length > 0 && <span className="sf-badge">{wrongItems.length}</span>}
+              <button className="sf-action-btn sf-wrong-btn" onClick={() => { openPanel('wrongbook'); setSidebarOpen(false) }}>
+                <Icon name="book" size={14} /> 错题本 {wrongItems.length > 0 && <span className="sf-badge">{wrongItems.length}</span>}
               </button>
             </div>
           </div>
         </aside>
 
-        {/* Main content */}
         <main className="content">
-          {searchQuery && filteredGroups.length === 0 ? (
-            <div className="empty-state">没有找到匹配的题目</div>
-          ) : searchQuery ? (
-            // Search results
-            filteredGroups.map(({ sectionIdx: si, groupIdx: gi, section, group }) => (
-              <QuestionGroup
-                key={`${si}-${gi}`}
-                sectionName={section.name}
-                group={group}
-                progress={progress}
-                onMark={markQuestion}
-              />
-            ))
-          ) : currentGroup ? (
-            <QuestionGroup
-              sectionName={sections[sectionIdx].name}
-              group={currentGroup}
-              progress={progress}
-              onMark={markQuestion}
-            />
-          ) : null}
-
-          {/* Navigation arrows (desktop/tablet) */}
-          {!searchQuery && (
-            <div className="nav-footer">
-              <button className="nav-btn" disabled={!canGoPrev} onClick={handlePrev}>
-                ← 上一组
-              </button>
-              <span className="nav-pos">{currentPos + 1} / {allGroups.length}</span>
-              <button className="nav-btn" disabled={!canGoNext} onClick={handleNext}>
-                下一组 →
+          {!current ? (
+            <div className="empty-state">
+              <div className="empty-state-icon"><Icon name="search" size={22} /></div>
+              <h1>当前筛选下没有题目</h1>
+              <p>试试清除搜索词、切换题型或打开全部章节。</p>
+              <button className="primary-button" onClick={() => { setSearchQuery(''); setFilterType('all'); setGroupIndex(0) }}>
+                显示全部题库 <Icon name="arrow" size={17} />
               </button>
             </div>
+          ) : (
+            <>
+              <div className="breadcrumb">
+                <span>{current.section.name}</span>
+                <Icon name="chevron" size={13} />
+                <span>{kindLabel(current.group)}</span>
+                {current.group.sourcePage && (
+                  <>
+                    <Icon name="chevron" size={13} />
+                    <strong>原题第{current.group.sourcePage}页</strong>
+                  </>
+                )}
+              </div>
+
+              <div className="content-heading">
+                <div>
+                  <h1>{current.group.title || '题库原题'}</h1>
+                  <p>
+                    {current.group.type === 'b_type'
+                      ? '共用选项保留在本组内；每个题干独立作答，提交后逐题反馈。'
+                      : '先默写或口述，再看答案并自评掌握程度。'}
+                  </p>
+                </div>
+                <div className="heading-actions">
+                  <button className={`ghost-button ${favorite ? 'selected' : ''}`} onClick={() => toggleFavorite(current.id)}>
+                    <Icon name={favorite ? 'bookmarkFill' : 'bookmark'} size={17} />{favorite ? '已收藏' : '收藏'}
+                  </button>
+                  <button className="ghost-button" onClick={() => setShowNote(v => !v)}>
+                    <Icon name="note" size={17} />笔记
+                  </button>
+                </div>
+              </div>
+
+              {showNote && (
+                <div className="note-strip">
+                  <Icon name="note" size={17} />
+                  <input value={notes[current.id] || ''} onChange={e => setNote(current.id, e.target.value)} placeholder="写下你的易错点或记忆口诀…" />
+                </div>
+              )}
+
+              {current.group.type === 'b_type' ? (
+                <BTypeGroup key={current.id} item={current} progress={progress} onMark={markQuestion} />
+              ) : (
+                <QAGroup sectionName={current.section.name} group={current.group} progress={progress} onMark={markQuestion} />
+              )}
+
+              <div className="bottom-nav">
+                <button className="pager-button" onClick={() => goTo(-1)}><Icon name="left" size={18} />上一组</button>
+                <GroupJump current={groupIndex + 1} total={totalGroups} onJump={jumpTo} />
+                <button className="pager-button" onClick={() => goTo(1)}>下一组<Icon name="right" size={18} /></button>
+              </div>
+            </>
           )}
         </main>
 
-        {/* Right panel */}
         <aside className={`right-panel ${rightPanelOpen ? 'open' : ''}`}>
-          {rightPanelTab === 'dashboard' ? (
-            <>
-              <div className="rp-header">
-                <strong>📊 学习面板</strong>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button className="icon-btn" onClick={() => setRightPanelTab('wrongbook')} title="查看错题本">
-                    📕{wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
-                  </button>
-                  <button className="icon-btn right-panel-header-close" onClick={() => setRightPanelOpen(false)} aria-label="关闭">✕</button>
-                </div>
-              </div>
-              
-              {/* Overall stats */}
-              <div className="rp-stats">
-                <div className="rp-stat">
-                  <div className="rp-stat-val">{stats.answered}<span className="rp-stat-unit">/{stats.total}</span></div>
-                  <div className="rp-stat-label">已答</div>
-                </div>
-                <div className="rp-stat">
-                  <div className="rp-stat-val" style={{color: 'var(--correct)'}}>{stats.correct}</div>
-                  <div className="rp-stat-label">正确</div>
-                </div>
-                <div className="rp-stat">
-                  <div className="rp-stat-val" style={{color: stats.wrong > 0 ? 'var(--wrong)' : 'var(--text-secondary)'}}>{stats.wrong}</div>
-                  <div className="rp-stat-label">错题</div>
-                </div>
-              </div>
-              
-              <div className="rp-progress-bar-wrap">
-                <div className="rp-progress-bar">
-                  <i style={{width: `${stats.pct}%`}} />
-                </div>
-                <span className="rp-pct">{stats.pct}%</span>
-              </div>
+          <div className="rp-header">
+            <strong>
+              {rightPanelTab === 'dashboard' ? '学习面板' : rightPanelTab === 'wrongbook' ? `错题本 (${wrongItems.length})` : '本题依据'}
+            </strong>
+            <div className="rp-header-actions">
+              <button className={`rp-tab-btn ${rightPanelTab === 'dashboard' ? 'active' : ''}`} onClick={() => setRightPanelTab('dashboard')} title="学习面板"><Icon name="chart" size={15} /></button>
+              <button className={`rp-tab-btn ${rightPanelTab === 'evidence' ? 'active' : ''}`} onClick={() => setRightPanelTab('evidence')} title="本题依据"><Icon name="eye" size={15} /></button>
+              <button className={`rp-tab-btn ${rightPanelTab === 'wrongbook' ? 'active' : ''}`} onClick={() => setRightPanelTab('wrongbook')} title="错题本">
+                <Icon name="book" size={15} />
+                {wrongItems.length > 0 && <sup>{wrongItems.length}</sup>}
+              </button>
+              <button className="icon-btn right-panel-header-close" onClick={() => setRightPanelOpen(false)} aria-label="关闭"><Icon name="close" size={14} /></button>
+            </div>
+          </div>
 
-              {/* Chapter progress */}
-              <div className="rp-section-title">章节进度</div>
-              {chapterStats.map(cs => (
-                <div key={cs.name} className="rp-chapter">
-                  <div className="rp-chapter-header">
-                    <span className="rp-chapter-name">{cs.name}</span>
-                    <span className="rp-chapter-count">{cs.done}/{cs.total}</span>
-                  </div>
-                  <div className="rp-chapter-bar">
-                    <i style={{width: `${cs.pct}%`, background: cs.pct >= 80 ? 'var(--correct)' : cs.pct >= 40 ? '#ed8936' : 'var(--border)'}} />
-                  </div>
-                </div>
-              ))}
-
-              {/* Recent wrong items */}
-              {wrongItems.length > 0 && (
-                <>
-                  <div className="rp-section-title">最近错题</div>
-                  {wrongItems.slice(-3).reverse().map((item, idx) => (
-                    <button
-                      key={idx}
-                      className="rp-wrong-item"
-                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx, item.question.id); setRightPanelOpen(false) }}
-                    >
-                      <span className="rp-wrong-sec">{item.sectionName}</span>
-                      <span className="rp-wrong-text">{item.question.text.substring(0, 35)}…</span>
-                    </button>
-                  ))}
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="rp-header">
-                <strong>📕 错题本 ({wrongItems.length})</strong>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button className="icon-btn" onClick={() => setRightPanelTab('dashboard')}>📊</button>
-                  <button className="icon-btn" onClick={() => setRightPanelOpen(false)} aria-label="关闭">✕</button>
-                </div>
-              </div>
-              {wrongItems.length === 0 ? (
-                <div className="rp-empty">暂无错题 🎉</div>
-              ) : (
-                <div className="wrong-book-list">
-                  {wrongItems.map((item, idx) => (
-                    <button
-                      key={`${item.question.id}-${idx}`}
-                      className="wrong-item-btn"
-                      onClick={() => { goToGroup(item.sectionIdx, item.groupIdx, item.question.id); setRightPanelOpen(false) }}
-                    >
-                      <span className="wrong-item-section">{item.sectionName}</span>
-                      <span className="wrong-item-title">{item.groupTitle}</span>
-                      <span className="wrong-item-q">Q{item.qi + 1}: {item.question.text.substring(0, 40)}{item.question.text.length > 40 ? '…' : ''}</span>
-                      {item.question.answer && <span className="wrong-item-answer">答案: {item.question.answer}</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
+          {rightPanelTab === 'dashboard' && (
+            <DashboardTab stats={stats} chapterStats={chapterStats} wrongItems={wrongItems} goToGroup={goToGroup} openPanel={openPanel} />
+          )}
+          {rightPanelTab === 'evidence' && (
+            <EvidenceTab item={current} progress={progress} />
+          )}
+          {rightPanelTab === 'wrongbook' && (
+            <WrongBookTab wrongItems={wrongItems} goToGroup={goToGroup} />
           )}
         </aside>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      {!searchQuery && (
+      {current && (
         <nav className="mobile-bottom-nav">
           <button className="mbn-item" onClick={toggleSidebar}>
-            <span className="mbn-icon">📋</span>
+            <span className="mbn-icon"><Icon name="menu" size={20} /></span>
             <span className="mbn-label">目录</span>
           </button>
-          <button className={`mbn-item ${!canGoPrev ? 'disabled' : ''}`} onClick={handlePrev} disabled={!canGoPrev} style={{ opacity: canGoPrev ? 1 : 0.3 }}>
-            <span className="mbn-icon">⬅️</span>
+          <button className="mbn-item" onClick={() => goTo(-1)} disabled={totalGroups <= 1} style={{ opacity: totalGroups <= 1 ? 0.3 : 1 }}>
+            <span className="mbn-icon"><Icon name="left" size={20} /></span>
             <span className="mbn-label">上一组</span>
           </button>
-          <button className="mbn-item" onClick={toggleRightPanel}>
+          <button className="mbn-item" onClick={() => openPanel('dashboard')}>
             <span className="mbn-icon">
-              📊
+              <Icon name="chart" size={20} />
               {wrongItems.length > 0 && <span className="mbn-badge">{wrongItems.length}</span>}
             </span>
             <span className="mbn-label">{stats.pct}%</span>
           </button>
-          <button className={`mbn-item ${!canGoNext ? 'disabled' : ''}`} onClick={handleNext} disabled={!canGoNext} style={{ opacity: canGoNext ? 1 : 0.3 }}>
-            <span className="mbn-icon">➡️</span>
+          <button className="mbn-item" onClick={() => goTo(1)} disabled={totalGroups <= 1} style={{ opacity: totalGroups <= 1 ? 0.3 : 1 }}>
+            <span className="mbn-icon"><Icon name="right" size={20} /></span>
             <span className="mbn-label">下一组</span>
           </button>
         </nav>
@@ -504,130 +538,128 @@ export default function App() {
   )
 }
 
-function QuestionGroup({ sectionName, group, progress, onMark }) {
-  if (group.type === 'b_type') {
-    return <BTypeGroup sectionName={sectionName} group={group} progress={progress} onMark={onMark} />
+function GroupJump({ current, total, onJump }) {
+  const [value, setValue] = useState(String(current))
+
+  function submitJump(event) {
+    event.preventDefault()
+    const requested = Number.parseInt(value, 10)
+    const next = Number.isFinite(requested) ? Math.min(Math.max(requested, 1), total) : current
+    setValue(String(next))
+    onJump(next - 1)
   }
-  return <QAGroup sectionName={sectionName} group={group} progress={progress} onMark={onMark} />
+
+  return (
+    <form className="group-jump" onSubmit={submitJump}>
+      <span>跳至</span>
+      <input type="number" inputMode="numeric" min="1" max={total} step="1" value={value} onChange={e => setValue(e.target.value)} aria-label={`跳转到第几组，当前范围共 ${total} 组`} />
+      <span>/ {total} 组</span>
+      <button type="submit">跳转</button>
+    </form>
+  )
 }
 
-function BTypeGroup({ sectionName, group, progress, onMark }) {
-  const [answers, setAnswers] = useState({})
-  const [submitted, setSubmitted] = useState({})
+function BTypeGroup({ item, progress, onMark }) {
+  const { group } = item
+  const [answers, setAnswers] = useState({})      // { [qid]: 'ABC' }
+  const [submitted, setSubmitted] = useState({})  // { [qid]: true }
 
-  const handleSelect = (qid, letter) => {
+  const isMulti = q => (q.answer || '').length > 1
+
+  const handleSelect = (qid, letter, multi) => {
     if (submitted[qid]) return
     setAnswers(prev => {
-      const current = prev[qid] || ''
-      if (current.includes(letter)) {
-        return { ...prev, [qid]: current.replace(letter, '') }
+      const cur = prev[qid] || ''
+      if (multi) {
+        const next = cur.includes(letter) ? cur.replace(letter, '') : [...cur, letter].sort().join('')
+        return { ...prev, [qid]: next }
       }
-      const newVal = (current + letter).split('').sort().join('')
-      return { ...prev, [qid]: newVal }
+      return { ...prev, [qid]: cur === letter ? '' : letter }
     })
   }
 
-  const handleSubmit = (qid, correctAnswer) => {
-    const userAns = answers[qid] || ''
-    const isCorrect = userAns === correctAnswer
+  const handleSubmit = (qid, answer) => {
+    const user = answers[qid] || ''
     setSubmitted(prev => ({ ...prev, [qid]: true }))
-    onMark(qid, isCorrect ? 'correct' : 'wrong')
+    onMark(qid, user === answer ? 'correct' : 'wrong')
   }
 
   const handleReset = (qid) => {
-    setAnswers(prev => {
-      const next = { ...prev }
-      delete next[qid]
-      return next
-    })
-    setSubmitted(prev => {
-      const next = { ...prev }
-      delete next[qid]
-      return next
-    })
+    setAnswers(prev => { const n = { ...prev }; delete n[qid]; return n })
+    setSubmitted(prev => { const n = { ...prev }; delete n[qid]; return n })
     onMark(qid, null)
   }
 
   return (
-    <div className="question-group">
-      <div className="group-header">
-        <span className="section-badge">{sectionName}</span>
-        <span className="type-badge b_type">B型题</span>
-        <span className="source-page">原题第{group.sourcePage}页</span>
-      </div>
-      <h2 className="group-title">{group.title}</h2>
-      <p className="group-hint">每个题干独立作答，提交后逐题反馈。</p>
+    <div className="question-side">
+      {group.questions.map((q, qi) => {
+        const sel = answers[q.id] || ''
+        const multi = isMulti(q)
+        const isSubmitted = submitted[q.id]
+        const isCorrect = isSubmitted && sel === q.answer
+        const isWrong = isSubmitted && sel !== q.answer
+        const status = progress[q.id]
 
-      <div className="question-side">
-          {group.questions.map((q, qi) => {
-            const userAns = answers[q.id] || ''
-            const isSubmitted = submitted[q.id]
-            const isCorrect = isSubmitted && userAns === q.answer
-            const isWrong = isSubmitted && userAns !== q.answer
-            const status = progress[q.id]
+        return (
+          <div key={q.id} id={`q-${q.id}`} className={`q-card ${isCorrect ? 'correct' : ''} ${isWrong ? 'wrong' : ''}`}>
+            <div className="q-header">
+              <span className="q-num">{qi + 1}</span>
+              <span className="q-text">{q.text}</span>
+              <span className={`answer-mode ${multi ? 'is-multi' : ''}`}>{multi ? '多选' : '单选'}</span>
+              {status === 'correct' && <span className="q-status correct"><Icon name="check" size={18} /></span>}
+              {status === 'wrong' && <span className="q-status wrong"><Icon name="alert" size={18} /></span>}
+            </div>
 
-            return (
-              <div key={q.id} id={`q-${q.id}`} className={`q-card ${isCorrect ? 'correct' : ''} ${isWrong ? 'wrong' : ''}`}>
-                <div className="q-header">
-                  <span className="q-num">{qi + 1}</span>
-                  <span className="q-text">{q.text}</span>
-                  {status === 'correct' && <span className="q-status correct">✓</span>}
-                  {status === 'wrong' && <span className="q-status wrong">✗</span>}
-                </div>
-
-                <div className="q-body">
-                  <div className="answer-buttons">
-                    {group.sharedOptions.map(opt => (
-                      <button
-                        key={opt.id}
-                        className={`letter-btn ${userAns.includes(opt.id) ? 'selected' : ''}`}
-                        onClick={() => handleSelect(q.id, opt.id)}
-                        disabled={isSubmitted}
-                      >
-                        <b>{opt.id}</b><span>{opt.text}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {!isSubmitted && userAns && (
-                    <button className="submit-btn" onClick={() => handleSubmit(q.id, q.answer)}>
-                      提交答案
+            <div className="q-body">
+              <div className="answer-buttons">
+                {group.sharedOptions.map(opt => {
+                  const active = sel.includes(opt.id)
+                  const isAnswer = isSubmitted && (q.answer || '').includes(opt.id)
+                  const isMissed = isSubmitted && isAnswer && !active
+                  return (
+                    <button
+                      key={opt.id}
+                      className={`letter-btn ${active ? 'selected' : ''} ${isSubmitted && isAnswer ? 'answer' : ''} ${isMissed ? 'missed' : ''} ${isSubmitted && active && !isAnswer ? 'wrong' : ''}`}
+                      onClick={() => handleSelect(q.id, opt.id, multi)}
+                      disabled={isSubmitted}
+                    >
+                      <b>{opt.id}</b><span>{opt.text}</span>
                     </button>
-                  )}
-
-                  {isSubmitted && (
-                    <div className={`feedback ${isCorrect ? 'correct' : 'wrong'}`}>
-                      {isCorrect ? '✅ 正确！' : `❌ 你的答案: ${userAns}，正确答案: ${q.answer}`}
-                      {q.note && <span className="feedback-note">（{q.note}）</span>}
-                      <button className="retry-btn" onClick={() => handleReset(q.id)}>重做</button>
-                    </div>
-                  )}
-                </div>
+                  )
+                })}
               </div>
-            )
-          })}
-        </div>
+
+              {!isSubmitted && sel && (
+                <button className="submit-btn" onClick={() => handleSubmit(q.id, q.answer)}>
+                  提交答案 <Icon name="arrow" size={15} />
+                </button>
+              )}
+
+              {isSubmitted && (
+                <div className={`feedback ${isCorrect ? 'correct' : 'wrong'}`}>
+                  {isCorrect ? (
+                    <>✅ 正确！{q.note && <span className="feedback-note">（{q.note}）</span>}</>
+                  ) : (
+                    <>❌ 正确答案：{q.answer.split('').join('、')}{q.note && <span className="feedback-note">（{q.note}）</span>}</>
+                  )}
+                  <button className="retry-btn" onClick={() => handleReset(q.id)}>重做</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
 function QAGroup({ sectionName, group, progress, onMark }) {
-  return (
-    <div className="question-group">
-      <div className="group-header">
-        <span className="section-badge">{sectionName}</span>
-        <span className="type-badge qa">问答题</span>
-      </div>
-      <h2 className="group-title">{group.title}</h2>
-
-      {group.questions.map((q, qi) => (
-        <QACard key={q.id} q={q} qi={qi} progress={progress} onMark={onMark} />
-      ))}
-    </div>
-  )
+  return group.questions.map((q, qi) => (
+    <QACard key={q.id} q={q} qi={qi} groupTitle={group.title} sectionName={sectionName} progress={progress} onMark={onMark} />
+  ))
 }
 
-function QACard({ q, qi, progress, onMark }) {
+function QACard({ q, qi, sectionName, groupTitle, progress, onMark }) {
   const [revealed, setRevealed] = useState(false)
   const [selfCheck, setSelfCheck] = useState(null)
   const status = progress[q.id]
@@ -643,16 +675,16 @@ function QACard({ q, qi, progress, onMark }) {
       <div className="q-header">
         <span className="q-num">{qi + 1}</span>
         <span className="q-text">{q.text}</span>
-        {status === 'correct' && <span className="q-status correct">✓</span>}
-        {status === 'wrong' && <span className="q-status wrong">✗</span>}
+        {status === 'correct' && <span className="q-status correct"><Icon name="check" size={18} /></span>}
+        {status === 'wrong' && <span className="q-status wrong"><Icon name="alert" size={18} /></span>}
       </div>
-
       <div className="q-body">
         {!revealed ? (
           <button className="reveal-btn" onClick={handleReveal}>点击查看答案</button>
         ) : (
           <div className="answer-section">
             <div className="answer-content">{q.answer}</div>
+            {q.note && <div className="qa-note"><Icon name="alert" size={14} /><span>{q.note}</span></div>}
             {!selfCheck ? (
               <div className="self-check">
                 <span>你答对了吗？</span>
@@ -668,6 +700,124 @@ function QACard({ q, qi, progress, onMark }) {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function DashboardTab({ stats, chapterStats, wrongItems, goToGroup, openPanel }) {
+  return (
+    <>
+      <div className="rp-stats">
+        <div className="rp-stat">
+          <div className="rp-stat-val">{stats.answered}<span className="rp-stat-unit">/{stats.total}</span></div>
+          <div className="rp-stat-label">已答</div>
+        </div>
+        <div className="rp-stat">
+          <div className="rp-stat-val" style={{ color: 'var(--correct)' }}>{stats.correct}</div>
+          <div className="rp-stat-label">正确</div>
+        </div>
+        <div className="rp-stat">
+          <div className="rp-stat-val" style={{ color: stats.wrong > 0 ? 'var(--wrong)' : 'var(--text-secondary)' }}>{stats.wrong}</div>
+          <div className="rp-stat-label">错题</div>
+        </div>
+      </div>
+      <div className="rp-progress-bar-wrap">
+        <div className="rp-progress-bar"><i style={{ width: `${stats.pct}%` }} /></div>
+        <span className="rp-pct">{stats.pct}%</span>
+      </div>
+
+      <div className="rp-section-title">章节进度</div>
+      {chapterStats.map(cs => (
+        <div key={cs.name} className="rp-chapter">
+          <div className="rp-chapter-header">
+            <span className="rp-chapter-name">{cs.name}</span>
+            <span className="rp-chapter-count">{cs.done}/{cs.total}</span>
+          </div>
+          <div className="rp-chapter-bar">
+            <i style={{ width: `${cs.pct}%`, background: cs.pct >= 80 ? 'var(--correct)' : cs.pct >= 40 ? '#ed8936' : 'var(--border-strong)' }} />
+          </div>
+        </div>
+      ))}
+
+      {wrongItems.length > 0 && (
+        <>
+          <div className="rp-section-title">最近错题</div>
+          {wrongItems.slice(-3).reverse().map((item, idx) => (
+            <button key={idx} className="rp-wrong-item" onClick={() => goToGroup(item.sectionIdx, item.groupIdx, item.question.id)}>
+              <span className="rp-wrong-sec">{item.sectionName}</span>
+              <span className="rp-wrong-text">{item.question.text.substring(0, 35)}{item.question.text.length > 35 ? '…' : ''}</span>
+            </button>
+          ))}
+        </>
+      )}
+    </>
+  )
+}
+
+function EvidenceTab({ item, progress }) {
+  if (!item) return <div className="rp-empty">打开一个题组查看依据</div>
+  const { group, section } = item
+  const isB = group.type === 'b_type'
+  const resultCount = isB ? group.questions.filter(q => progress[q.id] === 'correct').length : 0
+  const answeredCount = isB ? group.questions.filter(q => progress[q.id]).length : 0
+  const pdfName = group.pdf === 'down' ? 'pdf/physio-down.pdf' : 'pdf/physio-up.pdf'
+  const pdfPage = group.pdfPage || 1
+  const pdfSrc = `${pdfName}#page=${pdfPage}`
+
+  return (
+    <div className="evidence-body">
+      <div className="evidence-section">
+        <div className="evidence-title">
+          <span className="evidence-icon"><Icon name="check" size={18} /></span>
+          <div><h2>本题依据</h2><p>{section.name} · {kindLabel(group)} · 共 {group.questions.length} 问</p></div>
+          <span className="verified-dot"><Icon name="check" size={13} /></span>
+        </div>
+        <div className="evidence-facts">
+          <div className="source-line"><span>章节</span><strong>{section.name}</strong></div>
+          <div className="source-line"><span>题型</span><strong>{kindLabel(group)}</strong></div>
+          <div className="source-line"><span>原题页</span><strong>{group.sourcePage ? `第 ${group.sourcePage} 页` : `PDF 第 ${pdfPage} 页`}</strong></div>
+          <div className="source-line"><span>来源</span><strong>{group.pdf === 'down' ? '天门提问·下册' : '天门带背·上册'}</strong></div>
+        </div>
+      </div>
+
+      <div className="evidence-section">
+        <div className="evidence-title">
+          <span className="evidence-icon"><Icon name="file" size={18} /></span>
+          <div><h2>原题 PDF</h2><p>{group.title} · 第 {pdfPage} 页</p></div>
+        </div>
+        <div className="evidence-pdf">
+          <iframe
+            src={pdfSrc}
+            title={`原题 PDF 第 ${pdfPage} 页`}
+            loading="lazy"
+          />
+        </div>
+      </div>
+
+      {isB && answeredCount > 0 && (
+        <div className={`rp-summary-card ${resultCount === group.questions.length ? 'ok' : ''}`}>
+          <Icon name={resultCount === group.questions.length ? 'check' : 'alert'} size={16} />
+          <span>本组正确 {resultCount} / {group.questions.length}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function WrongBookTab({ wrongItems, goToGroup }) {
+  if (wrongItems.length === 0) {
+    return <div className="rp-empty">暂无错题 🎉</div>
+  }
+  return (
+    <div className="wrong-book-list">
+      {wrongItems.map((item, idx) => (
+        <button key={`${item.question.id}-${idx}`} className="wrong-item-btn" onClick={() => goToGroup(item.sectionIdx, item.groupIdx, item.question.id)}>
+          <span className="wrong-item-section">{item.sectionName}</span>
+          <span className="wrong-item-title">{item.groupTitle}</span>
+          <span className="wrong-item-q">Q{item.qi + 1}: {item.question.text.substring(0, 40)}{item.question.text.length > 40 ? '…' : ''}</span>
+          {item.question.answer && <span className="wrong-item-answer">答案: {item.question.answer}</span>}
+        </button>
+      ))}
     </div>
   )
 }
