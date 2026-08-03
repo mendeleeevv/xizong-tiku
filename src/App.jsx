@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import physioData from './data'
-import neikeData from './data-neike'
+import neikeRenalData from './data-neike-renal'
+import neikeEndoData from './data-neike-endo'
 
 const SUBJECTS = {
   physio: {
@@ -12,13 +13,21 @@ const SUBJECTS = {
     sectionLabel: '章节',
     content: physioData,
   },
-  neike: {
-    key: 'neike',
-    label: '内科',
-    title: '内科学 · 肾内科 / 内分泌 / 糖尿病',
-    subtitle: '306 西综（内科学）',
+  renal: {
+    key: 'renal',
+    label: '肾内',
+    title: '内科学 · 肾内科',
+    subtitle: '306 西综（肾小球疾病 / 泌尿难点）',
     sectionLabel: '章节',
-    content: neikeData,
+    content: neikeRenalData,
+  },
+  endo: {
+    key: 'endo',
+    label: '内分泌',
+    title: '内科学 · 内分泌',
+    subtitle: '306 西综（Graves / 甲减 / 糖尿病 等）',
+    sectionLabel: '章节',
+    content: neikeEndoData,
   },
 }
 
@@ -771,9 +780,12 @@ function EvidenceTab({ item, progress }) {
   const isB = group.type === 'b_type'
   const resultCount = isB ? group.questions.filter(q => progress[q.id] === 'correct').length : 0
   const answeredCount = isB ? group.questions.filter(q => progress[q.id]).length : 0
-  const pdfName = group.pdf === 'down' ? 'pdf/physio-down.pdf' : 'pdf/physio-up.pdf'
+  const pdfName = group.pdf === 'up' || group.pdf === 'down'
+    ? (group.pdf === 'down' ? 'pdf/physio-down.pdf' : 'pdf/physio-up.pdf')
+    : (group.pdf ? (group.pdf.startsWith('pdf/') ? group.pdf : `pdf/${group.pdf}`) : 'pdf/physio-up.pdf')
   const pdfPage = group.pdfPage || 1
   const pdfSrc = `${pdfName}#page=${pdfPage}`
+  const pdfLabel = group.pdfLabel || (group.pdf === 'down' ? '天门提问·下册' : '天门带背·上册')
   const [pdfZoom, setPdfZoom] = useState(false)
 
   return (
@@ -788,7 +800,7 @@ function EvidenceTab({ item, progress }) {
           <div className="source-line"><span>章节</span><strong>{section.name}</strong></div>
           <div className="source-line"><span>题型</span><strong>{kindLabel(group)}</strong></div>
           <div className="source-line"><span>原题页</span><strong>{group.sourcePage ? `第 ${group.sourcePage} 页` : `PDF 第 ${pdfPage} 页`}</strong></div>
-          <div className="source-line"><span>来源</span><strong>{group.pdf === 'down' ? '天门提问·下册' : '天门带背·上册'}</strong></div>
+          <div className="source-line"><span>来源</span><strong>{pdfLabel}</strong></div>
         </div>
       </div>
 
