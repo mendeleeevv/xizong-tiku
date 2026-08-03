@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import physioData from './data'
+import neikeData from './data-neike'
 
 const SUBJECTS = {
   physio: {
@@ -10,6 +11,14 @@ const SUBJECTS = {
     subtitle: '306 西综（生理学）',
     sectionLabel: '章节',
     content: physioData,
+  },
+  neike: {
+    key: 'neike',
+    label: '内科',
+    title: '内科学 · 肾内科 / 内分泌 / 糖尿病',
+    subtitle: '306 西综（内科学）',
+    sectionLabel: '章节',
+    content: neikeData,
   },
 }
 
