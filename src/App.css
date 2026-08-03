@@ -197,6 +197,33 @@ html, body {
   background: var(--blue);
   box-shadow: 0 4px 10px rgba(28, 99, 220, 0.2);
 }
+.subject-sub-switch {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.subject-sub-switch button {
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.subject-sub-switch button:hover {
+  color: var(--blue);
+}
+.subject-sub-switch button.active {
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+}
 
 .brand {
   display: flex;
@@ -2436,6 +2463,7 @@ html, body {
     display: none;
   }
   .subject-switch,
+  .subject-sub-switch,
   .filter-select,
   .progress-strip {
     display: none;

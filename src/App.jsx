@@ -13,21 +13,16 @@ const SUBJECTS = {
     sectionLabel: '章节',
     content: physioData,
   },
-  renal: {
-    key: 'renal',
-    label: '肾内',
-    title: '内科学 · 肾内科',
-    subtitle: '306 西综（肾小球疾病 / 泌尿难点）',
+  neike: {
+    key: 'neike',
+    label: '内科',
+    title: '内科学',
+    subtitle: '306 西综（内科学）',
     sectionLabel: '章节',
-    content: neikeRenalData,
-  },
-  endo: {
-    key: 'endo',
-    label: '内分泌',
-    title: '内科学 · 内分泌',
-    subtitle: '306 西综（Graves / 甲减 / 糖尿病 等）',
-    sectionLabel: '章节',
-    content: neikeEndoData,
+    subs: [
+      { key: 'renal', label: '肾内', title: '内科学 · 肾内科', subtitle: '306 西综（肾小球疾病 / 泌尿难点）', content: neikeRenalData },
+      { key: 'endo', label: '内分泌', title: '内科学 · 内分泌', subtitle: '306 西综（Graves / 甲减 / 糖尿病 等）', content: neikeEndoData },
+    ],
   },
 }
 
@@ -36,6 +31,7 @@ const STORAGE = {
   favorites: 'xizong-tiku-favorites',
   notes: 'xizong-tiku-notes',
   subject: 'xizong-subject',
+  subSubject: 'xizong-sub-subject',
   dark: 'xizong-dark',
 }
 
@@ -93,6 +89,7 @@ function Icon({ name, size = 18, stroke = 'currentColor' }) {
 
 export default function App() {
   const [subjectKey, setSubjectKey] = useState(() => localStorage.getItem(STORAGE.subject) || 'physio')
+  const [subKey, setSubKey] = useState(() => localStorage.getItem(STORAGE.subSubject) || 'renal')
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem(STORAGE.dark) === '1')
   const [groupIndex, setGroupIndex] = useState(0)
   const [progress, setProgress] = useState(() => loadJSON(STORAGE.progress, {}))
@@ -143,7 +140,8 @@ export default function App() {
   }, [scrollToQid, groupIndex])
 
   const subject = SUBJECTS[subjectKey] || SUBJECTS.physio
-  const sections = subject.content.sections
+  const activeSub = subject.subs ? (subject.subs.find(s => s.key === subKey) || subject.subs[0]) : null
+  const sections = (activeSub || subject).content.sections
 
   const allGroups = useMemo(() => {
     const result = []
@@ -186,6 +184,13 @@ export default function App() {
   const handleSwitchSubject = useCallback((key) => {
     setSubjectKey(key)
     localStorage.setItem(STORAGE.subject, key)
+    setGroupIndex(0)
+    setSearchQuery('')
+  }, [])
+
+  const handleSwitchSub = useCallback((key) => {
+    setSubKey(key)
+    localStorage.setItem(STORAGE.subSubject, key)
     setGroupIndex(0)
     setSearchQuery('')
   }, [])
@@ -310,10 +315,19 @@ export default function App() {
           <div className="brand" onClick={() => goToGroup(0, 0)} title="回到首页">
             <div className="brand-logo"><Icon name="heart" size={19} stroke="white" /></div>
             <div className="brand-text">
-              <span className="brand-title">{subject.title}</span>
-              <span className="brand-sub">{subject.subtitle}</span>
+              <span className="brand-title">{(activeSub || subject).title}</span>
+              <span className="brand-sub">{(activeSub || subject).subtitle}</span>
             </div>
           </div>
+          {subject.subs && (
+            <div className="subject-sub-switch">
+              {subject.subs.map(s => (
+                <button key={s.key} className={subKey === s.key ? 'active' : ''} onClick={() => handleSwitchSub(s.key)}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="topbar-center">
